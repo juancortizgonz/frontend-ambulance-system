@@ -5,6 +5,7 @@ const App = () => {
   return (
     <>
       <Navbar />
+      <h2 className="font-bold underline">Home</h2>
     </>
   )
 }
