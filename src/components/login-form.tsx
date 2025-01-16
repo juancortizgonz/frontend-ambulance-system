@@ -32,12 +32,14 @@ export function LoginForm({
       });
 
       if (!response.ok) {
-        console.log(data);
         throw new Error("Error en la solicitud. Es posible que el email o la contraseña sean incorrectos.");
       }
 
       const result = await response.json();
       localStorage.setItem("token", result.token);
+      localStorage.setItem("user", result.user_id);
+      localStorage.setItem("email", result.email);
+      localStorage.setItem("role", result.groups[0]);
       navigate("/faq");
     } catch (error) {
       console.error(error);
