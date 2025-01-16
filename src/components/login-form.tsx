@@ -40,7 +40,7 @@ export function LoginForm({
       localStorage.setItem("user", result.user_id);
       localStorage.setItem("email", result.email);
       localStorage.setItem("role", result.groups[0]);
-      navigate("/faq");
+      navigate("/");
     } catch (error) {
       console.error(error);
     }
