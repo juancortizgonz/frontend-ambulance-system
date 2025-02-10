@@ -26,9 +26,6 @@ const AdminDashboard: React.FC = () => {
     const openModal = () => setIsModalOpen(true)
     const closeModal = () => setIsModalOpen(false)
 
-    // ToDo: "Datetime has wrong format. Use one of these formats instead: YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z]."
-    // When trying to make the POST to the DB
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const element = e.target
         const { name, value, type, checked } = element as HTMLInputElement
@@ -44,6 +41,11 @@ const AdminDashboard: React.FC = () => {
         if (!formData.severity) newErrors.severity = "La severidad del accidente es requerida."
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
+    }
+
+    const formatDate = (date: Date | null): string | undefined => {
+        if (!date) return undefined
+        return date.toISOString().split(".")[0] + "Z"
     }
 
     const toSnakeCase = (obj: Record<string, any>): AccidentReport => {
@@ -62,7 +64,7 @@ const AdminDashboard: React.FC = () => {
         if (isValid()) {
             const data = {
                 ...formData,
-                accidentTime: selectedDate?.toISOString(),
+                accidentTime: formatDate(selectedDate),
             }
 
             const snakeCaseData = toSnakeCase(data)
@@ -137,10 +139,20 @@ const AdminDashboard: React.FC = () => {
                             <label className="block text-gray-700">Nivel del accidente</label>
                             <input placeholder="Selecciona un nivel" type="text" list="severity" name="severity" onChange={handleChange} />
                             <datalist id="severity">
-                                <option value="Básico">Básico</option>
-                                <option value="UCI">UCI - Requieren atención de emergencia</option>
+                                <option value="BASIC">Básico</option>
+                                <option value="UCI">UCI</option>
                             </datalist>
                             {errors.severity && <p className="text-red-500">{errors.severity}</p>}
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-gray-700">Latitud</label>
+                            <input placeholder="Latitud" type="number" step="any" name="latitude" onChange={handleChange} />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-gray-700">Longitud</label>
+                            <input placeholder="Longitud" type="number" step="any" name="longitude" onChange={handleChange} />
                         </div>
 
                         <div className="mb-4">
