@@ -3,7 +3,9 @@ import React, { useState } from "react"
 import DatePicker from "react-datepicker"
 import "react-datepicker/dist/react-datepicker.css"
 import { reportAccident } from "@/services/services"
-import { AccidentReport } from "@/types/interfaces";
+import { AccidentReport } from "@/types/interfaces"
+import { ToastContainer, toast } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 
 const AdminDashboard: React.FC = () => {
@@ -72,9 +74,11 @@ const AdminDashboard: React.FC = () => {
             try {
                 console.log(`Data para el POST: ${JSON.stringify(snakeCaseData, null, 2)}`)
                 await reportAccident(snakeCaseData)
+                toast.success("Reporte de accidente creado satisfactoriamente.")
                 closeModal()
             } catch (error) {
                 if (error instanceof Error) {
+                    toast.error("Hubo un error al crear el reporte. Intente de nuevo.")
                     console.error(`Ocurrió un error al reportar el accidente: ${error}`)
                 } else {
                     console.error(`Ocurrió un error desconocido: ${error}`)
@@ -94,72 +98,80 @@ const AdminDashboard: React.FC = () => {
                     Reportar un nuevo accidente
                 </div>
                 <Modal isOpen={isModalOpen} onClose={closeModal}>
-                    <form onSubmit={handleSubmit}>
-                        <div className="mb-4">
-                            <label className="block text-gray-700">Fecha del accidente</label>
-                            <DatePicker
-                                selected={selectedDate}
-                                onChange={(date) => setSelectedDate(date)}
-                                showTimeSelect
-                                dateFormat="Pp"
-                                className="w-full px-3 py-2 border rounded"
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700">Descripción</label>
-                            <textarea
-                                className="w-full px-3 py-2 border rounded"
-                                onChange={handleChange}
-                                name="description"
-                            ></textarea>
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700">¿Está activo?</label>
-                            <input
-                                type="checkbox"
-                                className="w-full px-3 py-2 border rounded"
-                                id="isActive"
-                                name="isActive"
-                                defaultChecked={true}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700">¿Está resuelto?</label>
-                            <input
-                                type="checkbox"
-                                className="w-full px-3 py-2 border rounded"
-                                defaultChecked={false}
-                                onChange={handleChange}
-                                name="isResolved"
-                            />
+                    <form onSubmit={handleSubmit} className="flex flex-col">
+
+                        <div className="flex gap-x-8">
+                            <div>
+                                <div className="mb-4">
+                                    <label className="block text-gray-700">Fecha del accidente</label>
+                                    <DatePicker
+                                        selected={selectedDate}
+                                        onChange={(date) => setSelectedDate(date)}
+                                        showTimeSelect
+                                        dateFormat="Pp"
+                                        className="w-full px-3 py-2 border rounded"
+                                    />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block text-gray-700">Descripción</label>
+                                    <textarea
+                                        className="w-full px-3 py-2 border rounded"
+                                        onChange={handleChange}
+                                        name="description"
+                                    ></textarea>
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block text-gray-700">¿Está activo?</label>
+                                    <input
+                                        type="checkbox"
+                                        className="w-full px-3 py-2 border rounded"
+                                        id="isActive"
+                                        name="isActive"
+                                        defaultChecked={true}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="block text-gray-700">¿Está resuelto?</label>
+                                    <input
+                                        type="checkbox"
+                                        className="w-full px-3 py-2 border rounded"
+                                        defaultChecked={false}
+                                        onChange={handleChange}
+                                        name="isResolved"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="mb-4">
+                                    <label className="block text-gray-700">Nivel del accidente</label>
+                                    <input placeholder="Selecciona un nivel" type="text" list="severity" name="severity" onChange={handleChange} />
+                                    <datalist id="severity">
+                                        <option value="BASIC">Básico</option>
+                                        <option value="UCI">UCI</option>
+                                    </datalist>
+                                    {errors.severity && <p className="text-red-500">{errors.severity}</p>}
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="block text-gray-700">Latitud</label>
+                                    <input placeholder="Latitud" type="number" step="any" name="latitude" onChange={handleChange} />
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="block text-gray-700">Longitud</label>
+                                    <input placeholder="Longitud" type="number" step="any" name="longitude" onChange={handleChange} />
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="block text-gray-700">Dirección del incidente</label>
+                                    <input placeholder="Dirección detallada del incidente" type="text" name="address" onChange={handleChange} />
+                                    {errors.address && <p className="text-red-500">{errors.address}</p>}
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="mb-4">
-                            <label className="block text-gray-700">Nivel del accidente</label>
-                            <input placeholder="Selecciona un nivel" type="text" list="severity" name="severity" onChange={handleChange} />
-                            <datalist id="severity">
-                                <option value="BASIC">Básico</option>
-                                <option value="UCI">UCI</option>
-                            </datalist>
-                            {errors.severity && <p className="text-red-500">{errors.severity}</p>}
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700">Latitud</label>
-                            <input placeholder="Latitud" type="number" step="any" name="latitude" onChange={handleChange} />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700">Longitud</label>
-                            <input placeholder="Longitud" type="number" step="any" name="longitude" onChange={handleChange} />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-gray-700">Dirección del incidente</label>
-                            <input placeholder="Dirección detallada del incidente" type="text" name="address" onChange={handleChange} />
-                            {errors.address && <p className="text-red-500">{errors.address}</p>}
-                        </div>
                         <button
                             type="submit"
                             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
@@ -169,6 +181,16 @@ const AdminDashboard: React.FC = () => {
                     </form>
                 </Modal>
             </div>
+            <ToastContainer
+                position="bottom-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+            />
         </>
     )
 }
