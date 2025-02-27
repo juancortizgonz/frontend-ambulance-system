@@ -33,7 +33,8 @@ const AmbulanceDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [estimatedTime, setEstimatedTime] = useState<string>("");
   const mapRef = useRef<GoogleMapsRef>(null);
-
+  const user_id = localStorage.getItem("user");
+  console.log("ESTE ES EL USER_ID", user_id);
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -53,10 +54,11 @@ const AmbulanceDashboard: React.FC = () => {
     }
   }, []);
 
+  //Useeffect para la peticion de origen
   useEffect(() => {
     const interval = setInterval(() => {
       updateAmbulanceLocation();
-    }, 10000);
+    }, 1000000);
 
     return () => clearInterval(interval);
   }, [origin]);
@@ -136,6 +138,54 @@ const AmbulanceDashboard: React.FC = () => {
     );
   };
 
+  
+  useEffect(() => {
+    const fetchAccidentReports = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const response = await fetch("http://localhost:8000/api/v1/accident-reports/", {
+          method: "GET",
+          headers: { Authorization: `Token ${token}` },
+        });
+        if (!response.ok) throw new Error("Error en la solicitud GET.");
+        
+        const data = await response.json();
+        console.log("Datos recibidos de la API:", data);
+
+  
+        // Filtrar el accidente asignado a la ambulancia con ID y que no esté resuelto
+        const assignedAccident = data.find(accident => 
+          Number(accident.assigned_ambulance_user_id) === Number(user_id) && !accident.is_resolved
+        );
+  
+        if (assignedAccident && assignedAccident.latitude && assignedAccident.longitude) {
+          const lat = parseFloat(assignedAccident.latitude);
+          const lng = parseFloat(assignedAccident.longitude);
+          
+          console.log("Coordenadas del accidente antes de actualizar estado:", lat, lng);
+          setDestination({ lat, lng }); // Ahora se usa latitud y longitud en lugar de address
+          console.log("Coordenadas del accidente después de actualizar estado:", lat, lng);
+        } else {
+          console.log("No se encontró un accidente asignado a la ambulancia 1 que no esté resuelto.");
+        }
+      } catch (error) {
+        console.error("Error obteniendo los reportes de accidentes:", error);
+      }
+    };
+  
+    fetchAccidentReports();
+  }, []);
+  
+  
+  const handleStartRoute = () => {
+    
+      setRouteStarted(true);
+    
+  };
+  
+
+
   const handleClearDestination = () => {
     setDestination("");
     setDirectionsResponse(null);
@@ -143,6 +193,85 @@ const AmbulanceDashboard: React.FC = () => {
     setRouteStarted(false);
     setEstimatedTime("");
   };
+
+
+  const handleFinalize = async () => {
+    // Restablecer el estado a valores predeterminados
+    setDestination("");
+    setDirectionsResponse(null);
+    setDestinationMarker(null);
+    setRouteStarted(false);
+    setEstimatedTime("");
+  
+    const token = localStorage.getItem("token");
+    if (!token) return;
+  
+    try {
+      // Obtener la lista de accidentes
+      const response = await fetch("http://localhost:8000/api/v1/accident-reports/", {
+        method: "GET",
+        headers: { Authorization: `Token ${token}` },
+      });
+      if (!response.ok) throw new Error("Error en la solicitud GET.");
+  
+      const data = await response.json();
+      console.log("Datos recibidos de la API:", data);
+  
+      // Filtrar el accidente asignado a la ambulancia con ID 1 y que no esté resuelto
+      const assignedAccident = data.find(
+        (accident) => Number(accident.assigned_ambulance_user_id) === Number(user_id) && !accident.is_resolved
+      );
+  
+      if (assignedAccident) {
+        const accidentId = assignedAccident.id;
+  
+        // PATCH para marcar el accidente como resuelto
+        const patchResponse = await fetch(
+          `http://localhost:8000/api/v1/accident-reports/${accidentId}/`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Token ${token}`,
+            },
+            body: JSON.stringify({
+              is_active: false,
+              is_resolved: true,
+            }),
+          }
+        );
+  
+        if (!patchResponse.ok) throw new Error("Error al actualizar el accidente.");
+        console.log("Accidente marcado como resuelto");
+  
+        // PATCH para actualizar el estado de la ambulancia
+        const user_id = localStorage.getItem("user");
+        if (user_id) {
+          const ambulanceResponse = await fetch(
+            `http://localhost:8000/api/v1/ambulances/${user_id}/`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+              },
+              body: JSON.stringify({
+                status: "available",
+              }),
+            }
+          );
+  
+          if (!ambulanceResponse.ok) throw new Error("Error al actualizar la ambulancia.");
+          console.log("Estado de la ambulancia actualizado a 'available'");
+        }
+      }
+    } catch (error) {
+      console.error("Error en la finalización:", error);
+    }
+  };
+  
+
+
 
   return (
     <LoadScript googleMapsApiKey={googleMapsApiKey || ""} libraries={libraries}>
@@ -152,31 +281,45 @@ const AmbulanceDashboard: React.FC = () => {
         ) : (
           <>
             <div className="flex mb-4">
-              <Autocomplete>
-                <input
-                  type="text"
-                  placeholder="Destino"
-                  className="border p-2 mr-2"
-                  onChange={(e) => setDestination(e.target.value)}
-                  value={destination}
-                />
-              </Autocomplete>
-              <button className="bg-blue-500 text-white p-2" onClick={() => setRouteStarted(true)} disabled={!origin || !destination}>
-                Iniciar Ruta
+              <button className="bg-red-500 text-white p-2 ml-2" onClick={handleClearDestination}>
+                Limpiar Destino
               </button>
-              <button className="bg-red-500 text-white p-2 ml-2" onClick={handleClearDestination}>Limpiar Destino</button>
-              <button className="bg-green-500 text-white p-2 ml-2" onClick={findClosestHospital} disabled={!origin}>
+              <button
+                className="bg-green-500 text-white p-2 ml-2"
+                onClick={findClosestHospital}
+                disabled={!origin}
+              >
                 Redireccion a Hospital
               </button>
+              <button
+                className={`bg-blue-500 text-white p-2 ml-2 ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={handleStartRoute}
+                disabled={!destination}
+              >
+                Enrutarme
+              </button>
+              
+              <button
+                className={`bg-red-500 text-white p-2 ml-2 ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={handleFinalize}
+                disabled={!destination}
+              >
+                Finalizado
+              </button>
+
             </div>
             {estimatedTime && <p>Tiempo estimado de llegada: {estimatedTime}</p>}
             <GoogleMap mapContainerStyle={containerStyle} center={origin!} zoom={15} ref={mapRef}>
               <TrafficLayer /> {/* <---- Capa de tráfico añadida aquí */}
-
+  
               {routeStarted && origin && destination && (
                 <DirectionsService
-                  options={{ origin: origin, destination: destination, provideRouteAlternatives: true,
-                    travelMode: google.maps.TravelMode.DRIVING}}
+                  options={{
+                    origin: origin,
+                    destination: destination,
+                    provideRouteAlternatives: true,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                  }}
                   callback={(response) => {
                     if (response && response.status === "OK") {
                       setDirectionsResponse(response);
@@ -193,6 +336,7 @@ const AmbulanceDashboard: React.FC = () => {
       </div>
     </LoadScript>
   );
+  
 };
 
 export default AmbulanceDashboard;
