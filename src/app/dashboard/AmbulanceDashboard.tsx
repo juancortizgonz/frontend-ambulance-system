@@ -8,6 +8,7 @@ import {
   DirectionsRenderer,
   TrafficLayer, // <---- Importación añadida
 } from "@react-google-maps/api";
+import { useAuth } from "@/hooks/useAuth";
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -33,7 +34,9 @@ const AmbulanceDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [estimatedTime, setEstimatedTime] = useState<string>("");
   const mapRef = useRef<GoogleMapsRef>(null);
-  const user_id = localStorage.getItem("user");
+
+  const { token, userId } = useAuth()
+  const user_id = userId;
   console.log("ESTE ES EL USER_ID", user_id);
   useEffect(() => {
     if (navigator.geolocation) {
@@ -70,8 +73,6 @@ const AmbulanceDashboard: React.FC = () => {
     geocoder.geocode({ location: origin }, async (results, status) => {
       if (status === "OK" && results[0]) {
         const address = results[0].formatted_address;
-        const token = localStorage.getItem("token");
-        const user_id = localStorage.getItem("user");
 
         console.log("Token:", token);
         console.log("User ID:", user_id);
@@ -141,7 +142,6 @@ const AmbulanceDashboard: React.FC = () => {
   
   useEffect(() => {
     const fetchAccidentReports = async () => {
-      const token = localStorage.getItem("token");
       if (!token) return;
       try {
         const response = await fetch("http://localhost:8000/api/v1/accident-reports/", {
@@ -203,7 +203,6 @@ const AmbulanceDashboard: React.FC = () => {
     setRouteStarted(false);
     setEstimatedTime("");
   
-    const token = localStorage.getItem("token");
     if (!token) return;
   
     try {
@@ -245,7 +244,6 @@ const AmbulanceDashboard: React.FC = () => {
         console.log("Accidente marcado como resuelto");
   
         // PATCH para actualizar el estado de la ambulancia
-        const user_id = localStorage.getItem("user");
         if (user_id) {
           const ambulanceResponse = await fetch(
             `http://localhost:8000/api/v1/ambulances/${user_id}/`,

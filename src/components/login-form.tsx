@@ -4,12 +4,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState } from "react"
 
+import { useAuth } from "@/hooks/useAuth"
+
 import { useNavigate } from "react-router";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+
+  const { setAuthInfo } = useAuth();
 
   let navigate = useNavigate();
 
@@ -36,10 +40,7 @@ export function LoginForm({
       }
 
       const result = await response.json();
-      localStorage.setItem("token", result.token);
-      localStorage.setItem("user", result.user_id);
-      localStorage.setItem("email", result.email);
-      localStorage.setItem("role", result.groups[0]);
+      setAuthInfo(result.token, result.groups[0], result.user_id, result.email)
       navigate("/");
     } catch (error) {
       console.error(error);

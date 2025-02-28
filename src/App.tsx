@@ -3,8 +3,11 @@ import AdminDashboard from "./app/dashboard/AdminDashboard";
 import HospitalDashboard from "./app/dashboard/HospitalDashboard";
 import AmbulanceDashboard from "./app/dashboard/AmbulanceDashboard";
 
+import { useAuth } from "./hooks/useAuth"
+
 const App = () => {
-  const role = localStorage.getItem("role");
+  const { role } = useAuth();
+  console.log(`El rol es: ${role}`);
 
   if (role === "Admin") return <AdminDashboard />;
   if (role === "Hospital") return <HospitalDashboard />;
