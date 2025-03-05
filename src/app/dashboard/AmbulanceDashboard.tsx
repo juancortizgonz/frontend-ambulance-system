@@ -6,7 +6,8 @@ import {
   Autocomplete,
   DirectionsService,
   DirectionsRenderer,
-  TrafficLayer, // <---- Importación añadida
+  TrafficLayer, 
+  Polyline,
 } from "@react-google-maps/api";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -17,12 +18,11 @@ type DirectionsResult = google.maps.DirectionsResult | null;
 type GoogleMapsRef = google.maps.Map | null;
 
 const containerStyle = { width: "100%", height: "80vh" };
-const libraries: ("places")[] = ["places"];
+const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
-const hospitals: string[] = [
-  "Cra. 38 Bis #5B2-04, Santa Isabel, Cali, Valle del Cauca",
-  "Circunvalación #9-13, Jamundí, Valle del Cauca",
-  "Av. 2 Nte. #24N-157, El Piloto, Cali, Valle del Cauca",
+const hospitals = [
+  { lat: 3.43018335, lng: -76.5454400504182 },
+  { lat: 3.2571925, lng: -76.5443504949529 },
 ];
 
 const AmbulanceDashboard: React.FC = () => {
@@ -31,13 +31,13 @@ const AmbulanceDashboard: React.FC = () => {
   const [directionsResponse, setDirectionsResponse] = useState<DirectionsResult>(null);
   const [destinationMarker, setDestinationMarker] = useState<LatLngLiteral | null>(null);
   const [routeStarted, setRouteStarted] = useState<boolean>(false);
+  const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [estimatedTime, setEstimatedTime] = useState<string>("");
   const mapRef = useRef<GoogleMapsRef>(null);
-
+  
   const { token, userId } = useAuth()
   const user_id = userId;
-  console.log("ESTE ES EL USER_ID", user_id);
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -74,9 +74,7 @@ const AmbulanceDashboard: React.FC = () => {
       if (status === "OK" && results[0]) {
         const address = results[0].formatted_address;
 
-        console.log("Token:", token);
-        console.log("User ID:", user_id);
-
+       
         if (!token || !user_id) {
           console.error("No se encontró el token o user_id en localStorage.");
           return;
@@ -110,33 +108,100 @@ const AmbulanceDashboard: React.FC = () => {
     });
   };
 
-  const findClosestHospital = () => {
+  const findClosestHospital = async () => {
     if (!origin) return;
-
+  
     const service = new window.google.maps.DistanceMatrixService();
+    
     service.getDistanceMatrix(
       {
         origins: [origin],
         destinations: hospitals,
         travelMode: google.maps.TravelMode.DRIVING,
       },
-      (response, status) => {
+      async (response, status) => {
         if (status === "OK" && response.rows.length > 0) {
           const distances = response.rows[0].elements;
           let minIndex = 0;
           let minDistance = distances[0].distance.value;
-
+  
           for (let i = 1; i < distances.length; i++) {
             if (distances[i].distance.value < minDistance) {
               minDistance = distances[i].distance.value;
               minIndex = i;
             }
           }
-          setDestination(hospitals[minIndex]);
+  
+          const closestHospital = hospitals[minIndex];
           setRouteStarted(true);
+  
+          // Llamar a la API Routes para obtener la ruta al hospital más cercano
+          await getRouteToHospital(closestHospital);
         }
       }
     );
+  };
+  
+  const getRouteToHospital = async (hospital) => {
+    if (!origin || !hospital) return;
+  
+    const requestBody = {
+      origin: {
+        location: {
+          latLng: {
+            latitude: origin.lat,
+            longitude: origin.lng,
+          },
+        },
+      },
+      destination: {
+        location: {
+          latLng: {
+            latitude: hospital.lat,
+            longitude: hospital.lng,
+          },
+        },
+      },
+      travelMode: "DRIVE",
+      computeAlternativeRoutes: false,
+      routeModifiers: {
+        avoidTolls: false,
+        avoidHighways: false,
+        avoidFerries: false,
+      },
+      languageCode: "en-US",
+      units: "METRIC",
+    };
+  
+    try {
+      const response = await fetch(
+        "https://routes.googleapis.com/directions/v2:computeRoutes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": googleMapsApiKey,
+            "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+  
+      if (!response.ok) {
+        console.error("Error en la respuesta de Routes API:", response.status, response.statusText);
+        return;
+      }
+  
+      const data = await response.json();
+  
+      if (data.routes && data.routes.length > 0) {
+        setRoute(data.routes[0]);
+      } else {
+        console.error("No se encontró una ruta válida en la respuesta.");
+      }
+    } catch (error) {
+      console.error("Error al obtener la ruta:", error);
+    }
   };
 
   
@@ -181,6 +246,7 @@ const AmbulanceDashboard: React.FC = () => {
   const handleStartRoute = () => {
     
       setRouteStarted(true);
+      getRoute();
     
   };
   
@@ -188,6 +254,7 @@ const AmbulanceDashboard: React.FC = () => {
 
   const handleClearDestination = () => {
     setDestination("");
+    setRoute(null);
     setDirectionsResponse(null);
     setDestinationMarker(null);
     setRouteStarted(false);
@@ -197,6 +264,7 @@ const AmbulanceDashboard: React.FC = () => {
 
   const handleFinalize = async () => {
     // Restablecer el estado a valores predeterminados
+    setRoute(null);
     setDestination("");
     setDirectionsResponse(null);
     setDestinationMarker(null);
@@ -268,73 +336,153 @@ const AmbulanceDashboard: React.FC = () => {
     }
   };
   
-
+  const getRoute = async () => {
+    if (!origin || !destination) return;
+  
+    const requestBody = {
+      origin: {
+        location: {
+          latLng: {
+            latitude: origin.lat,
+            longitude: origin.lng,
+          },
+        },
+      },
+      destination: {
+        location: {
+          latLng: {
+            latitude: destination.lat,
+            longitude: destination.lng,
+          },
+        },
+      },
+      travelMode: "DRIVE",
+      computeAlternativeRoutes: false,     // Opcional, si lo necesitas
+      routeModifiers: {
+        avoidTolls: false,                 // Opcional, si lo necesitas
+        avoidHighways: false,              // Opcional, si lo necesitas
+        avoidFerries: false,               // Opcional, si lo necesitas
+      },
+      languageCode: "en-US",               // Opcional, si lo necesitas
+      units: "IMPERIAL",                   // Opcional, si lo necesitas
+    };
+  
+    console.log("Enviando solicitud a Routes API:", requestBody);
+  
+    try {
+      const response = await fetch(
+        "https://routes.googleapis.com/directions/v2:computeRoutes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": googleMapsApiKey,
+            'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+  
+      console.log("Respuesta completa de Routes API:", response);
+  
+      if (!response.ok) {
+        console.error("Error en la respuesta de Routes API:", response.status, response.statusText);
+        return;
+      }
+  
+      const data = await response.json();
+      console.log("Datos de la API de rutas:", data);
+  
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        console.log("ESTO ES EL VERDADERO ROUTE", data.routes[0]) 
+        if (route.polyline && route.polyline.encodedPolyline) {
+          setRoute(route);
+          const encodedPolyline = route.polyline.encodedPolyline;
+          console.log('Encoded polyline:', encodedPolyline);
+          // Aquí puedes procesar el polyline como lo necesitas
+        } else {
+          console.error('No se encontró la propiedad "encodedPolyline" en la respuesta');
+        }
+      } else {
+        console.error('No se encontró la propiedad "routes" en la respuesta');
+      }
+  
+    } catch (error) {
+      console.error("Error al obtener la ruta:", error);
+    }
+  };
+  
+  
 
 
   return (
-    <LoadScript googleMapsApiKey={googleMapsApiKey || ""} libraries={libraries}>
-      <div className="flex flex-col items-center">
-        {loading ? (
-          <p>Cargando ubicación...</p>
-        ) : (
-          <>
-            <div className="flex mb-4">
-              <button className="bg-red-500 text-white p-2 ml-2" onClick={handleClearDestination}>
-                Limpiar Destino
-              </button>
-              <button
-                className="bg-green-500 text-white p-2 ml-2"
-                onClick={findClosestHospital}
-                disabled={!origin}
-              >
-                Redireccion a Hospital
-              </button>
-              <button
-                className={`bg-blue-500 text-white p-2 ml-2 ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
-                onClick={handleStartRoute}
-                disabled={!destination}
-              >
-                Enrutarme
-              </button>
-              
-              <button
-                className={`bg-red-500 text-white p-2 ml-2 ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
-                onClick={handleFinalize}
-                disabled={!destination}
-              >
-                Finalizado
-              </button>
+  <LoadScript googleMapsApiKey={googleMapsApiKey || ""} libraries={libraries}>
+    <div className="flex flex-col items-center">
+      {loading ? (
+        <p>Cargando ubicación...</p>
+      ) : (
+        <>
+          <div className="flex mb-4">
+            <button className="bg-red-500 text-white p-2 ml-2" onClick={handleClearDestination}>
+              Limpiar Destino
+            </button>
+            <button
+              className="bg-green-500 text-white p-2 ml-2"
+              onClick={findClosestHospital}
+              disabled={!origin}
+            >
+              Redireccion a Hospital
+            </button>
+            <button
+              className={`bg-blue-500 text-white p-2 ml-2 ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={handleStartRoute}
+              disabled={!destination}
+            >
+              Enrutarme
+            </button>
+            <button
+              className={`bg-red-500 text-white p-2 ml-2 ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={handleFinalize}
+              disabled={!destination}
+            >
+              Finalizado
+            </button>
+          </div>
+          {estimatedTime && <p>Tiempo estimado de llegada: {estimatedTime}</p>}
+          <GoogleMap
+            mapContainerStyle={{
+              height: "600px", // Asegúrate de que el mapa tenga una altura y anchura definidas
+              width: "100%",
+            }}              
+            center={origin!}
+            zoom={15}
+            ref={mapRef}
+          >
+            {/* Verificar si google.maps.geometry.encoding está disponible */}
+            {console.log("google.maps.geometry.encoding:", google.maps.geometry.encoding.decodePath)}
+            {console.log("ESTO ES ROUTE:", route)}
+            {origin && <Marker position={origin} />}
+            {destination && <Marker position={destination} />}
+            {route && route.polyline && route.polyline.encodedPolyline && (
+              <>
+                {console.log("Polyline codificada:", route.polyline.encodedPolyline)}
+                {console.log("Polyline decodificada:", google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline))}
+               
 
-            </div>
-            {estimatedTime && <p>Tiempo estimado de llegada: {estimatedTime}</p>}
-            <GoogleMap mapContainerStyle={containerStyle} center={origin!} zoom={15} ref={mapRef}>
-              <TrafficLayer /> {/* <---- Capa de tráfico añadida aquí */}
-  
-              {routeStarted && origin && destination && (
-                <DirectionsService
-                  options={{
-                    origin: origin,
-                    destination: destination,
-                    provideRouteAlternatives: true,
-                    travelMode: google.maps.TravelMode.DRIVING,
-                  }}
-                  callback={(response) => {
-                    if (response && response.status === "OK") {
-                      setDirectionsResponse(response);
-                      setEstimatedTime(response.routes[0].legs[0].duration.text);
-                    }
-                  }}
+                <Polyline
+                  path={google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline)}
+                  options={{ strokeColor: "#FF0000", strokeWeight: 9 }}
                 />
-              )}
-              {directionsResponse && <DirectionsRenderer directions={directionsResponse} />}
-              {origin && <Marker position={origin} />}
-            </GoogleMap>
-          </>
-        )}
-      </div>
-    </LoadScript>
-  );
-  
+              </>
+            )}
+          </GoogleMap>
+        </>
+      )}
+    </div>
+  </LoadScript>
+);
+
 };
 
 export default AmbulanceDashboard;
