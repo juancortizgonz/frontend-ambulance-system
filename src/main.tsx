@@ -5,6 +5,7 @@ import App from './App.jsx'
 import './index.css';
 import Login from './pages/Login.jsx';
 import FAQ from './pages/FAQ.jsx';
+import AccidentReportHistory from "./pages/AccidentReportHistory"
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
@@ -15,6 +16,7 @@ if (rootElement) {
           <Route path="/" element={<App />} />
           <Route path="login" element={<Login />} />
           <Route path="faq" element={<FAQ />} />
+          <Route path="history" element={<AccidentReportHistory />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>,
