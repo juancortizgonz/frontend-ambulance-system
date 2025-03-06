@@ -6,6 +6,10 @@ import { reportAccident } from "@/services/services"
 import { AccidentReport } from "@/types/interfaces"
 import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
+import { NavLink } from "react-router"
+
+// Icons
+import { FiPlusCircle, FiList } from "react-icons/fi"
 
 
 const AdminDashboard: React.FC = () => {
@@ -23,7 +27,7 @@ const AdminDashboard: React.FC = () => {
         assignedAmbulance: null,
         severity: "BASIC"
     })
-    const [errors, setErrors] =useState<{ [key: string]: string }>({})
+    const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
     const openModal = () => setIsModalOpen(true)
     const closeModal = () => setIsModalOpen(false)
@@ -54,7 +58,7 @@ const AdminDashboard: React.FC = () => {
         const newObject: any = {}
         for (const key in obj) {
             if (obj.hasOwnProperty(key)) {
-                const newKey = key.replace(/([A-Z])/g,"_$1").toLowerCase()
+                const newKey = key.replace(/([A-Z])/g, "_$1").toLowerCase()
                 newObject[newKey] = obj[key]
             }
         }
@@ -91,20 +95,37 @@ const AdminDashboard: React.FC = () => {
         <>
             <h3>Admin dashboard</h3>
             <div className="p-4">
-                <div
-                    onClick={openModal}
-                    className="cursor-pointer p-4 bg-gray-200 rounded shadow hover:bg-gray-300"
-                >
-                    Reportar un nuevo accidente
+                <div className="container flex gap-x-4">
+                    <button
+                        onClick={openModal}
+                        className="flex items-center justify-center p-4 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                openModal();
+                            }
+                        }}
+                    >
+                        <FiPlusCircle className="mr-2" size={24} />
+                        Reportar un nuevo accidente
+                    </button>
+                    <NavLink 
+                        to="/history" 
+                        className="flex items-center justify-center p-4 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
+                            <FiList className="mr-2" size={24} />
+                            Ver historial de accidentes
+                    </NavLink>
                 </div>
+
                 <Modal isOpen={isModalOpen} onClose={closeModal}>
                     <form onSubmit={handleSubmit} className="flex flex-col">
 
                         <div className="flex gap-x-8">
                             <div>
                                 <div className="mb-4">
-                                    <label className="block text-gray-700">Fecha del accidente</label>
+                                    <label htmlFor="accidentDate" className="block text-gray-700">Fecha del accidente</label>
                                     <DatePicker
+                                        id="accidentDate"
                                         selected={selectedDate}
                                         onChange={(date) => setSelectedDate(date)}
                                         showTimeSelect
@@ -113,15 +134,16 @@ const AdminDashboard: React.FC = () => {
                                     />
                                 </div>
                                 <div className="mb-4">
-                                    <label className="block text-gray-700">Descripción</label>
+                                    <label htmlFor="description" className="block text-gray-700">Descripción</label>
                                     <textarea
+                                        id="description"
                                         className="w-full px-3 py-2 border rounded"
                                         onChange={handleChange}
                                         name="description"
                                     ></textarea>
                                 </div>
                                 <div className="mb-4">
-                                    <label className="block text-gray-700">¿Está activo?</label>
+                                    <label htmlFor="isActive" className="block text-gray-700">¿Está activo?</label>
                                     <input
                                         type="checkbox"
                                         className="w-full px-3 py-2 border rounded"
@@ -132,7 +154,7 @@ const AdminDashboard: React.FC = () => {
                                     />
                                 </div>
                                 <div className="mb-4">
-                                    <label className="block text-gray-700">¿Está resuelto?</label>
+                                    <label htmlFor="isResolved" className="block text-gray-700">¿Está resuelto?</label>
                                     <input
                                         type="checkbox"
                                         className="w-full px-3 py-2 border rounded"
@@ -145,9 +167,9 @@ const AdminDashboard: React.FC = () => {
 
                             <div>
                                 <div className="mb-4">
-                                    <label className="block text-gray-700">Nivel del accidente</label>
-                                    <input placeholder="Selecciona un nivel" type="text" list="severity" name="severity" onChange={handleChange} />
-                                    <datalist id="severity">
+                                    <label htmlFor="severity" className="block text-gray-700">Nivel del accidente</label>
+                                    <input id="severity" placeholder="Selecciona un nivel" type="text" list="severityOptions" name="severity" onChange={handleChange} />
+                                    <datalist id="severityOptions">
                                         <option value="BASIC">Básico</option>
                                         <option value="UCI">UCI</option>
                                     </datalist>
@@ -155,18 +177,18 @@ const AdminDashboard: React.FC = () => {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="block text-gray-700">Latitud</label>
-                                    <input placeholder="Latitud" type="number" step="any" name="latitude" onChange={handleChange} />
+                                    <label htmlFor="latitude" className="block text-gray-700">Latitud</label>
+                                    <input id="latitude" placeholder="Latitud" type="number" step="any" name="latitude" onChange={handleChange} />
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="block text-gray-700">Longitud</label>
-                                    <input placeholder="Longitud" type="number" step="any" name="longitude" onChange={handleChange} />
+                                    <label htmlFor="longitude" className="block text-gray-700">Longitud</label>
+                                    <input id="longitude" placeholder="Longitud" type="number" step="any" name="longitude" onChange={handleChange} />
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="block text-gray-700">Dirección del incidente</label>
-                                    <input placeholder="Dirección detallada del incidente" type="text" name="address" onChange={handleChange} />
+                                    <label htmlFor="address" className="block text-gray-700">Dirección del incidente</label>
+                                    <input id="address" placeholder="Dirección detallada del incidente" type="text" name="address" onChange={handleChange} />
                                     {errors.address && <p className="text-red-500">{errors.address}</p>}
                                 </div>
                             </div>
