@@ -1,17 +1,11 @@
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { useState } from "react"
-
 import { useAuth } from "@/hooks/useAuth"
-
 import { useNavigate } from "react-router";
 
 export function LoginForm({
   className,
   ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+}: Readonly<React.ComponentPropsWithoutRef<"form">>) {
 
   const { setAuthInfo } = useAuth();
 
@@ -48,7 +42,7 @@ export function LoginForm({
   }
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-6" {...props} onSubmit={handleSubmit}>
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Ingresa al sistema</h1>
         <p className="text-balance text-sm text-muted-foreground">
@@ -57,24 +51,25 @@ export function LoginForm({
       </div>
       <div className="grid gap-6">
         <div className="grid gap-2">
-          <Label htmlFor="username">Usuario</Label>
-          <Input id="username" type="text" placeholder="miusuario123" onChange={(e) => setUsername(e.target.value)} required />
+          <label htmlFor="username">Usuario</label>
+          <input id="username" type="text" placeholder="miusuario123" onChange={(e) => setUsername(e.target.value)} required />
         </div>
         <div className="grid gap-2">
           <div className="flex items-center">
-            <Label htmlFor="password">Contraseña</Label>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
+            <label htmlFor="password">Contraseña</label>
+            <button
+              type="button"
+              className="ml-auto text-sm underline-offset-4 hover:underline text-blue-600"
+              onClick={() => alert('Password reset functionality not implemented yet')}
             >
               ¿Olvidaste tu contraseña?
-            </a>
+            </button>
           </div>
-          <Input id="password" type="password" onChange={(e) => setPassword(e.target.value)} required />
+          <input id="password" type="password" onChange={(e) => setPassword(e.target.value)} required />
         </div>
-        <Button type="submit" className="w-full">
+        <button type="submit" className="w-full bg-blue-400 py-3 flex justify-center text-white font-bold rounded-md">
           Ingresar
-        </Button>
+        </button>
       </div>
     </form>
   )
