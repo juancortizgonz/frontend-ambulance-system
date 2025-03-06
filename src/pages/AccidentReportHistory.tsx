@@ -3,6 +3,7 @@ import Table from "@/components/Table"
 import { useEffect, useState } from "react"
 import { AccidentReport } from "@/types/types"
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table"
+import { downloadPDF } from "@/utils/exportUtils"
 
 const AccidentReportHistory = () => {
     const [data, setData] = useState<AccidentReport[]>(() => [])
@@ -23,23 +24,23 @@ const AccidentReportHistory = () => {
     const columns = [
         {
             header: "ID",
-            accessorKey: "id",  
+            accessorKey: "id" as keyof AccidentReport,  
         },
         {
             header: "Dirección",
-            accessorKey: "address",
+            accessorKey: "address" as keyof AccidentReport,
         },
         {
             header: "Latitud",
-            accessorKey: "latitude",
+            accessorKey: "latitude" as keyof AccidentReport,
         },
         {
             header: "Longitud",
-            accessorKey: "longitude",
+            accessorKey: "longitude" as keyof AccidentReport,
         },
         {
             header: "Severidad",
-            accessorKey: "severity",
+            accessorKey: "severity" as keyof AccidentReport,
         }
     ]
 
@@ -54,6 +55,9 @@ const AccidentReportHistory = () => {
     return (
         <div className="container mx-auto p-4 flex flex-col items-center">
             <h1 className="font-bold text-2xl my-4">Accident report history</h1>
+            <div className="mb-4">
+                <button onClick={() => downloadPDF(data, columns)} className="mr-2 p-2 bg-blue-500 text-white rounded">Download PDF</button>
+            </div>
             <Table table={table} />
         </div>
     )
