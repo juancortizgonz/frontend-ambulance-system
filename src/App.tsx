@@ -3,6 +3,7 @@ import AdminDashboard from "./app/dashboard/AdminDashboard";
 import HospitalDashboard from "./app/dashboard/HospitalDashboard";
 import AmbulanceDashboard from "./app/dashboard/AmbulanceDashboard";
 import Footer from "@/components/Footer";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 import { useAuth } from "./hooks/useAuth"
 

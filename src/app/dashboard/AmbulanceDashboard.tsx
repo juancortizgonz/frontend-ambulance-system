@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Modal, Button } from "react-bootstrap";
+
 import {
   GoogleMap,
   LoadScript,
@@ -10,6 +12,7 @@ import {
   Polyline,
 } from "@react-google-maps/api";
 import { useAuth } from "@/hooks/useAuth";
+import Footer from "@/components/Footer";
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -31,6 +34,10 @@ const AmbulanceDashboard: React.FC = () => {
   const [directionsResponse, setDirectionsResponse] = useState<DirectionsResult>(null);
   const [destinationMarker, setDestinationMarker] = useState<LatLngLiteral | null>(null);
   const [routeStarted, setRouteStarted] = useState<boolean>(false);
+  const [showModal, setShowModal] = useState(false);
+  const [showEndRouteModal, setEndRouteShowModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // Estado para mostrar/ocultar el modal
+  const [selectedAccident, setSelectedAccident] = useState(null);
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [estimatedTime, setEstimatedTime] = useState<string>("");
@@ -229,7 +236,10 @@ const AmbulanceDashboard: React.FC = () => {
           const lng = parseFloat(assignedAccident.longitude);
           
           console.log("Coordenadas del accidente antes de actualizar estado:", lat, lng);
-          setDestination({ lat, lng }); // Ahora se usa latitud y longitud en lugar de address
+          setDestination({ lat, lng }); 
+          setSelectedAccident(assignedAccident);
+          setShowModal(true);
+
           console.log("Coordenadas del accidente después de actualizar estado:", lat, lng);
         } else {
           console.log("No se encontró un accidente asignado a la ambulancia 1 que no esté resuelto.");
@@ -259,18 +269,23 @@ const AmbulanceDashboard: React.FC = () => {
     setDestinationMarker(null);
     setRouteStarted(false);
     setEstimatedTime("");
+    setSelectedAccident(null);
   };
 
-
   const handleFinalize = async () => {
-    // Restablecer el estado a valores predeterminados
+    setShowConfirmModal(true); // Mostrar el modal de confirmación
+  };
+
+  const handleConfirmFinalize  = async () => {
+
+    setShowConfirmModal(false); 
     setRoute(null);
     setDestination("");
     setDirectionsResponse(null);
     setDestinationMarker(null);
     setRouteStarted(false);
     setEstimatedTime("");
-  
+    setEndRouteShowModal(true);
     if (!token) return;
   
     try {
@@ -413,46 +428,105 @@ const AmbulanceDashboard: React.FC = () => {
     }
   };
   
+
+  const handleCancelFinalize = () => {
+    setShowConfirmModal(false); // Cerrar el modal de confirmación si el usuario cancela
+  };
+
   
 
 
   return (
-  <LoadScript googleMapsApiKey={googleMapsApiKey || ""} libraries={libraries}>
+    <>
+    
+
+     {/* Modal de Confirmación */}
+     <Modal show={showConfirmModal} onHide={handleCancelFinalize}>
+        <Modal.Header closeButton>
+          <Modal.Title>¿Está seguro de finalizar el recorrido?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Esta acción conlleva la <strong style={{ color: "red" }}>terminación</strong> del servicio de enrutamiento actual.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCancelFinalize}>
+            No
+          </Button>
+          <Button variant="danger" onClick={handleConfirmFinalize}>
+            Sí, estoy seguro
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+    <Modal show={showModal && selectedAccident} onHide={() => setShowModal(false)} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Detalles del Accidente</Modal.Title>
+      </Modal.Header>
+      <Modal.Body style={{ backgroundColor: "white" }}>
+        <p><strong style={{ color: "red" }}>Hora del Accidente:</strong> <span style={{ color: "black" }}>{new Date(selectedAccident?.accident_time).toLocaleString()}</span></p>
+        <p><strong style={{ color: "red" }}>Fecha de Creación:</strong> <span style={{ color: "black" }}>{new Date(selectedAccident?.created_at).toLocaleString()}</span></p>
+        <p><strong style={{ color: "red" }}>Descripción:</strong> <span style={{ color: "black" }}>{selectedAccident?.description}</span></p>
+        <p><strong style={{ color: "red" }}>Severidad:</strong> <span style={{ color: "black" }}>{selectedAccident?.severity}</span></p>
+        <p><strong style={{ color: "red" }}>Dirección:</strong> <span style={{ color: "black" }}>{selectedAccident?.address}</span></p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="danger" onClick={() => setShowModal(false)}>Cerrar</Button>
+      </Modal.Footer>
+    </Modal>
+
+
+    {showEndRouteModal && (
+  <Modal show={showEndRouteModal} onHide={() => setEndRouteShowModal(false)} centered>
+    <Modal.Header closeButton>
+      <Modal.Title>Ruta Finalizada</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+      <p>El servicio ha sido completado satisfactoriamente.</p>
+    </Modal.Body>
+    <Modal.Footer>
+      <Button variant="danger" onClick={() => setEndRouteShowModal(false)}>
+        Cerrar
+      </Button>
+    </Modal.Footer>
+  </Modal>
+)}
+
+    <LoadScript googleMapsApiKey={googleMapsApiKey || ""} libraries={libraries}>
     <div className="flex flex-col items-center">
       {loading ? (
         <p>Cargando ubicación...</p>
       ) : (
         <>
-          <div className="flex mb-4">
-            <button className="bg-red-500 text-white p-2 ml-2" onClick={handleClearDestination}>
-              Limpiar Destino
+          <div className="flex mb-3  mt-3">
+            <button className="bg-red-500 text-white p-3 ml-2 rounded-lg" onClick={handleClearDestination}>
+              Limpiar destino actual
             </button>
             <button
-              className="bg-green-500 text-white p-2 ml-2"
+              className="bg-green-500 text-white p-3 ml-2 rounded-lg"
               onClick={findClosestHospital}
               disabled={!origin}
             >
-              Redireccion a Hospital
+              Redireccion al hospital
             </button>
             <button
-              className={`bg-blue-500 text-white p-2 ml-2 ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`bg-blue-500 text-white p-3 ml-2 rounded-lg ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={handleStartRoute}
               disabled={!destination}
             >
-              Enrutarme
+              Enrutar al accidente
             </button>
             <button
-              className={`bg-red-500 text-white p-2 ml-2 ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`bg-red-500 text-white p-3 ml-2 rounded-lg ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={handleFinalize}
               disabled={!destination}
             >
-              Finalizado
+              Ruta finalizada
             </button>
           </div>
           {estimatedTime && <p>Tiempo estimado de llegada: {estimatedTime}</p>}
           <GoogleMap
             mapContainerStyle={{
-              height: "600px", // Asegúrate de que el mapa tenga una altura y anchura definidas
+              height: "550px", // Asegúrate de que el mapa tenga una altura y anchura definidas
               width: "100%",
             }}              
             center={origin!}
@@ -460,8 +534,7 @@ const AmbulanceDashboard: React.FC = () => {
             ref={mapRef}
           >
             {/* Verificar si google.maps.geometry.encoding está disponible */}
-            {console.log("google.maps.geometry.encoding:", google.maps.geometry.encoding.decodePath)}
-            {console.log("ESTO ES ROUTE:", route)}
+         
             {origin && <Marker position={origin} />}
             {destination && <Marker position={destination} />}
             {route && route.polyline && route.polyline.encodedPolyline && (
@@ -472,7 +545,7 @@ const AmbulanceDashboard: React.FC = () => {
 
                 <Polyline
                   path={google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline)}
-                  options={{ strokeColor: "#FF0000", strokeWeight: 9 }}
+                  options={{ strokeColor: "#FF0000", strokeWeight: 5 }}
                 />
               </>
             )}
@@ -481,6 +554,9 @@ const AmbulanceDashboard: React.FC = () => {
       )}
     </div>
   </LoadScript>
+
+  <Footer/>
+  </>
 );
 
 };
