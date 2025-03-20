@@ -6,6 +6,7 @@ import './index.css';
 import Login from './pages/Login.jsx';
 import FAQ from './pages/FAQ.jsx';
 import AccidentReportHistory from "./pages/AccidentReportHistory"
+import MapPage from "./pages/MapPage"
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
@@ -17,6 +18,7 @@ if (rootElement) {
           <Route path="login" element={<Login />} />
           <Route path="faq" element={<FAQ />} />
           <Route path="history" element={<AccidentReportHistory />} />
+          <Route path="map" element={<MapPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>,

@@ -9,7 +9,7 @@ import "react-toastify/dist/ReactToastify.css"
 import { NavLink } from "react-router"
 
 // Icons
-import { FiPlusCircle, FiList } from "react-icons/fi"
+import { FiPlusCircle, FiList, FiMapPin } from "react-icons/fi"
 
 
 const AdminDashboard: React.FC = () => {
@@ -114,6 +114,12 @@ const AdminDashboard: React.FC = () => {
                         className="flex items-center justify-center p-4 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
                             <FiList className="mr-2" size={24} />
                             Ver historial de accidentes
+                    </NavLink>
+                    <NavLink 
+                        to="/map" 
+                        className="flex items-center justify-center p-4 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
+                            <FiMapPin className="mr-2" size={24} />
+                            Visualizar mapa
                     </NavLink>
                 </div>
 
