@@ -30,9 +30,8 @@ const hospitals = [
 
 const AmbulanceDashboard: React.FC = () => {
   const [origin, setOrigin] = useState<LatLngLiteral | null>(null);
-  const [destination, setDestination] = useState<string>("");
+  const [destination, setDestination] = useState<LatLngLiteral | null>(null);
   const [directionsResponse, setDirectionsResponse] = useState<DirectionsResult>(null);
-  const [destinationMarker, setDestinationMarker] = useState<LatLngLiteral | null>(null);
   const [routeStarted, setRouteStarted] = useState<boolean>(false);
   const [showModal, setShowModal] = useState(false);
   const [showEndRouteModal, setEndRouteShowModal] = useState(false);
@@ -41,6 +40,35 @@ const AmbulanceDashboard: React.FC = () => {
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [estimatedTime, setEstimatedTime] = useState<string>("");
+  const [closestHospital, setClosestHospital] = useState<LatLngLiteral | null>(null); // Estado para almacenar el hospital más cercano
+  const [hasShownModal, setHasShownModal] = useState(false); // Nueva bandera para controlar la visualización del modal
+
+  const originIcon = window.google?.maps
+  ? {
+      url: "https://img.icons8.com/plasticine/100/ambulance.png",
+      scaledSize: { width: 40, height: 40 }, 
+    }
+  : undefined;
+
+const destinationIcon = window.google?.maps
+  ? {
+      url: "https://img.icons8.com/color/48/car-crash.png",
+      scaledSize: { width: 50, height: 50 }, 
+    }
+  : undefined;
+
+const hospitalIcon = window.google?.maps
+  ? {
+      url: "https://img.icons8.com/dusk/64/hospital.png",
+      scaledSize: { width: 40, height: 40 }, 
+    }
+  : undefined;
+
+  const playSound = (message) => {
+    const utterance = new SpeechSynthesisUtterance(message);
+    speechSynthesis.speak(utterance);
+  };
+
   const mapRef = useRef<GoogleMapsRef>(null);
   
   const { token, userId } = useAuth()
@@ -140,8 +168,9 @@ const AmbulanceDashboard: React.FC = () => {
           }
   
           const closestHospital = hospitals[minIndex];
+          setClosestHospital(closestHospital); // Guardamos el hospital más cercano en el estado
           setRouteStarted(true);
-  
+          
           // Llamar a la API Routes para obtener la ruta al hospital más cercano
           await getRouteToHospital(closestHospital);
         }
@@ -238,9 +267,11 @@ const AmbulanceDashboard: React.FC = () => {
           console.log("Coordenadas del accidente antes de actualizar estado:", lat, lng);
           setDestination({ lat, lng }); 
           setSelectedAccident(assignedAccident);
-          setShowModal(true);
-
-          console.log("Coordenadas del accidente después de actualizar estado:", lat, lng);
+          if (!hasShownModal) {
+            setShowModal(true); // Mostrar el modal solo una vez
+            setHasShownModal(true); // Marcar que ya se mostró el modal
+            playSound("Accidente recibido"); // Reproducir sonido de alerta
+          }
         } else {
           console.log("No se encontró un accidente asignado a la ambulancia 1 que no esté resuelto.");
         }
@@ -248,9 +279,15 @@ const AmbulanceDashboard: React.FC = () => {
         console.error("Error obteniendo los reportes de accidentes:", error);
       }
     };
-  
-    fetchAccidentReports();
-  }, []);
+    fetchAccidentReports(); // Ejecutar la primera vez de inmediato
+
+    // Ejecutar la función de forma periódica
+    const intervalId = setInterval(fetchAccidentReports, 12000); // Cada 10 segundos
+
+    // Limpiar intervalo cuando el componente se desmonte
+    return () => clearInterval(intervalId);
+  }, [token, user_id, hasShownModal]); // Agregar 'hasShownModal' a las dependencias
+
   
   
   const handleStartRoute = () => {
@@ -263,13 +300,13 @@ const AmbulanceDashboard: React.FC = () => {
 
 
   const handleClearDestination = () => {
-    setDestination("");
+    setDestination(null);
     setRoute(null);
     setDirectionsResponse(null);
-    setDestinationMarker(null);
     setRouteStarted(false);
     setEstimatedTime("");
     setSelectedAccident(null);
+    setClosestHospital(null)
   };
 
   const handleFinalize = async () => {
@@ -280,9 +317,9 @@ const AmbulanceDashboard: React.FC = () => {
 
     setShowConfirmModal(false); 
     setRoute(null);
-    setDestination("");
+    setDestination(null);
+    setClosestHospital(null)
     setDirectionsResponse(null);
-    setDestinationMarker(null);
     setRouteStarted(false);
     setEstimatedTime("");
     setEndRouteShowModal(true);
@@ -535,8 +572,11 @@ const AmbulanceDashboard: React.FC = () => {
           >
             {/* Verificar si google.maps.geometry.encoding está disponible */}
          
-            {origin && <Marker position={origin} />}
-            {destination && <Marker position={destination} />}
+            {origin && <Marker position={origin} icon={originIcon} />}
+            {console.log("este es el destino", destination)}
+            {destination && <Marker position={destination} icon={destinationIcon} />}
+            {closestHospital && <Marker position={closestHospital} icon={hospitalIcon} />}
+
             {route && route.polyline && route.polyline.encodedPolyline && (
               <>
                 {console.log("Polyline codificada:", route.polyline.encodedPolyline)}
