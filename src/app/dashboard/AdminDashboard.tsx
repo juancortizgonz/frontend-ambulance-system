@@ -8,6 +8,8 @@ import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import { NavLink } from "react-router"
 
+import DashboardLayout from "@/components/layouts/DashboardLayout"
+
 // Icons
 import { FiPlusCircle, FiList } from "react-icons/fi"
 
@@ -92,7 +94,7 @@ const AdminDashboard: React.FC = () => {
     }
 
     return (
-        <>
+        <DashboardLayout role="Admin">
             <h3>Admin dashboard</h3>
             <div className="p-4">
                 <div className="container flex gap-x-4">
@@ -109,11 +111,11 @@ const AdminDashboard: React.FC = () => {
                         <FiPlusCircle className="mr-2" size={24} />
                         Reportar un nuevo accidente
                     </button>
-                    <NavLink 
-                        to="/history" 
+                    <NavLink
+                        to="/history"
                         className="flex items-center justify-center p-4 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
-                            <FiList className="mr-2" size={24} />
-                            Ver historial de accidentes
+                        <FiList className="mr-2" size={24} />
+                        Ver historial de accidentes
                     </NavLink>
                 </div>
 
@@ -214,7 +216,7 @@ const AdminDashboard: React.FC = () => {
                 draggable
                 pauseOnHover
             />
-        </>
+        </DashboardLayout>
     )
 }
 
