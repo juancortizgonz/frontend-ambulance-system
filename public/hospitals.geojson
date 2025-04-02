@@ -1,0 +1,245 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.54490396360877, 3.4303465119181227]
+      },
+      "properties": {
+        "name": "Hospital Universitario del Valle Evaristo García",
+        "marker-symbol": "hospital",
+        "address": "Cl. 5 #36 - 00, El Sindicato, Cali, Valle del Cauca",
+        "phone": "6026206275",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro médico público que atiende a la población de los departamentos del Pacífico colombiano. Es una de las instituciones de salud más grandes de la región."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.52568325011597, 3.37295070164683]
+      },
+      "properties": {
+        "name": "Fundación Valle del Lili",
+        "marker-symbol": "hospital",
+        "address": "Cra. 98 #18-49, Comuna 17, Cali, Valle del Cauca",
+        "phone": "6023319090",
+        "hours": "Abierto las 24 horas",
+        "description": "Hospital universitario de alta complejidad que ofrece servicios de salud en Colombia. Cuenta con sedes en Limonar, Tequendama, Av Estación y Alfaguara."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.52121305923623, 3.4753830740699665]
+      },
+      "properties": {
+        "name": "Clínica Cali",
+        "marker-symbol": "hospital",
+        "address": "Av. 3 Nte. #32AN-40, Bueno Madrid, Cali, Valle del Cauca",
+        "phone": "3166927534",
+        "hours": "Abierto las 24 horas",
+        "description": "Institución de salud en Cali, Colombia que ofrece servicios de urgencias, hospitalización y atención especializada."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.48276091201407, 3.4709280759463588]
+      },
+      "properties": {
+        "name": "Hospital Joaquín Paz Borrero",
+        "marker-symbol": "hospital",
+        "address": "Cl. 72a # 7a-00, Alfonso Lopez, Cali, Valle del Cauca",
+        "phone": "24184747",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro de salud de la Red de Salud del Norte ESE que ofrece servicios a las comunidades de las comunas 2, 4, 5, 6 y 7 de Cali."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.52842283684038, 3.4709280759463588]
+      },
+      "properties": {
+        "name": "Clínica Versalles",
+        "marker-symbol": "hospital",
+        "address": "Av. 5a Nte. #23N-46/57, San Vicente, Cali, Valle del Cauca",
+        "phone": "6026084343",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro médico privado en Cali, Valle del Cauca, Colombia, que ofrece atención médica integral y diversos servicios de salud."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.53700590541675, 3.4603045341458336]
+      },
+      "properties": {
+        "name": "Clínica Sebastian de Belalcazar",
+        "marker-symbol": "hospital",
+        "address": "Av. 4 Nte. #7N-81, Granada, Cali, Valle del Cauca",
+        "phone": "6026607001",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro médico en Cali, Colombia que ofrece servicios ambulatorios y hospitalarios. Su objetivo es mejorar la salud y el bienestar de la comunidad."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.52636289935114, 3.4585910485509785]
+      },
+      "properties": {
+        "name": "Hospital San Juan de Dios",
+        "marker-symbol": "hospital",
+        "address": "Cra. 4 #17-67, COMUNA 3, Cali, Valle del Cauca",
+        "phone": "6024892222",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro de salud que ofrece servicios de medicina general, cirugía, obstetricia, odontología, traumatología, entre otros."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.54318571376083, 3.450366274355867]
+      },
+      "properties": {
+        "name": "Hospital Cañaveralejo",
+        "marker-symbol": "hospital",
+        "address": "Cl. 3 Oe. #12a20, COMUNA 3, Cali, Valle del Cauca",
+        "phone": "6028937701",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro de salud de primer nivel ubicado en el barrio San Cayetano de la comuna 3 de Cali. Pertenece a la Red de Salud de Ladera ESE."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.50954008494145, 3.449680873290658]
+      },
+      "properties": {
+        "name": "Hospital Primitivo Iglesias",
+        "marker-symbol": "hospital",
+        "address": "Carrera 16a # 33d - 20, Cra. 16a, Cali, Valle del Cauca",
+        "phone": "3187818483",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro de salud público de la Red Centro ESE, ubicado en Santiago de Cali. Ofrece servicios de baja complejidad y complementarios."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.53357267687934, 3.4277477778929777]
+      },
+      "properties": {
+        "name": "Clínica Nuestra",
+        "marker-symbol": "hospital",
+        "address": "Cl. 10 #33-51, Comuna 10, Cali, Valle del Cauca",
+        "phone": "6023989699",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro médico que ofrece servicios de salud de alta complejidad. Su objetivo es brindar atención humanizada y segura a los pacientes."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.53975248625432, 3.4143820516102656]
+      },
+      "properties": {
+        "name": "CHRISTUS - Clínica Farallones",
+        "marker-symbol": "hospital",
+        "address": "Camino Real, Cl 9 C #50-25, panamericano, Cali, Valle del Cauca",
+        "phone": "6024858989",
+        "hours": "Abierto las 24 horas",
+        "description": "Institución médica en Cali, Colombia que ofrece servicios de salud integrales. Cuenta con servicios de hospitalización, imagenología, laboratorio clínico, y atención prioritaria."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.49374723868496, 3.422264425558292]
+      },
+      "properties": {
+        "name": "Hospital Carlos Holmes Trujillo",
+        "marker-symbol": "hospital",
+        "address": "Cl. 72u #28e-00, Cali, Valle del Cauca",
+        "phone": "24377777",
+        "hours": "Abierto las 24 horas",
+        "description": ""
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.48413420187943, 3.415410191014925]
+      },
+      "properties": {
+        "name": "Hospital Isaías Duarte Cancino E.S.E.",
+        "marker-symbol": "hospital",
+        "address": "Mojica II, Cra 28E3, El Poblado II, Cali, Valle del Cauca",
+        "phone": "6024140727",
+        "hours": "Lunes a viernes: 7 a.m. - 7 p.m., Sábado-Domingo: abierto las 24 horas",
+        "description": "Centro de salud en Cali, Colombia, que ofrece servicios de mediana y alta complejidad. Se encuentra en el sector de Aguablanca, en el oriente de la ciudad."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.51640653972659, 3.4150674780023587]
+      },
+      "properties": {
+        "name": "Hospital Carlos Carmona Montoya",
+        "marker-symbol": "hospital",
+        "address": "Cl. 39, Republica De Israel, Cali, Valle del Cauca",
+        "phone": "23280847",
+        "hours": "Abierto las 24 horas",
+        "description": "Centro de salud en Cali, Colombia, que ofrece servicios de mediana y alta complejidad. Se encuentra en el sector de Aguablanca, en el oriente de la ciudad."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.56009436102933, 3.3919983269309633]
+      },
+      "properties": {
+        "name": "Hospital Departamental Mario Correa Rengifo",
+        "marker-symbol": "hospital",
+        "address": "Cra. 78 oeste #2A - 00, Prados Del Sur, Cali, Valle del Cauca",
+        "phone": "6023180020",
+        "hours": "Lunes a sábado: 7 a.m. - 7 p.m., Domingo: cerrado",
+        "description": "Institución de salud de segundo nivel en Cali, Colombia. Se encuentra en el suroeste de la ciudad y forma parte de la red de servicios de salud departamental del Valle del Cauca."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-76.52694225762697, 3.39932396664302]
+      },
+      "properties": {
+        "name": "Fundación Valle del Lili - Sede Limonar",
+        "marker-symbol": "hospital",
+        "address": "Cra. 70 #18-75, El Limonar, Cali, Valle del Cauca",
+        "phone": "6023319090",
+        "hours": "Abierto las 24 horas",
+        "description": "Hospital universitario de alta complejidad que ofrece servicios de salud en Colombia. Cuenta con sedes en Limonar, Tequendama, Av Estación y Alfaguara."
+      }
+    }
+  ]
+}

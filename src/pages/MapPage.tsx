@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
 
-import 'mapbox-gl/dist/mapbox-gl.css';
+import "mapbox-gl/dist/mapbox-gl.css";
+import "@/styles/Mapbox_style.css";
 
 import { MAPBOX_ACCESS_TOKEN, MAPBOX_STYLE, INITIAL_CENTER, INITIAL_ZOOM } from "@/config/mapbox";
 
@@ -36,6 +37,65 @@ const MapPage = () => {
               }
           });
         }
+
+        mapRef.current?.on("load", () => {
+          mapRef.current?.addSource("hospitals", {
+            type: "geojson",
+            data: "/hospitals.geojson"
+          })
+
+          mapRef.current?.addLayer({
+            "id": "_hospitals-layer",
+            "type": "circle",
+            "source": "hospitals",
+            'layout': {
+                'icon-image': ['get', 'icon'],
+                'icon-allow-overlap': true
+            },
+            "paint": {
+              "circle-radius": 10,
+              "circle-stroke-width": 2,
+              "circle-color": "#3b83bd",
+              "circle-stroke-color": "white"
+            }
+          })
+
+        });
+
+        mapRef.current?.on("click", "_hospitals-layer", (e) => {
+          const properties = e.features?.[0]?.properties;
+
+          const popupHTML = `
+            <div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.5;">
+              <h3 style="margin: 0; font-size: 16px; color: #3b83bd;">${properties?.name || "Hospital"}</h3>
+              <p style="margin: 5px 0; font-size: 14px; color: #555;">
+                <strong>Dirección:</strong> ${properties?.address || "No disponible"}
+              </p>
+              <p style="margin: 5px 0; font-size: 14px; color: #555;">
+                <strong>Teléfono:</strong> ${properties?.phone || "No disponible"}
+              </p>
+              <p style="margin: 5px 0; font-size: 14px; color: #555;">
+                <strong>Horario:</strong> ${properties?.hours || "No disponible"}
+              </p>
+              <p style="margin: 5px 0; font-size: 14px; color: #555;">
+                ${properties?.description || "Descripción no disponible"}
+              </p>
+            </div>
+          `;
+
+          new mapboxgl.Popup({
+            className: "custom-popup"
+          })
+            .setLngLat(e.lngLat)
+            .setHTML(popupHTML)
+            .addTo(mapRef.current!);
+        });
+
+        mapRef.current?.on('mouseenter', 'places', () => {
+          if (mapRef.current) {
+            mapRef.current.getCanvas().style.cursor = 'pointer';
+          }
+        });
     
         return () => {
           if (mapRef.current) {
