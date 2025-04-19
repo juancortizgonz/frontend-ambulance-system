@@ -29,6 +29,7 @@ const hospitals = [
 ];
 
 const AmbulanceDashboard: React.FC = () => {
+  const [lastRouteAction, setLastRouteAction] = useState<"hospital" | "accidente" | null>(null);
   const [origin, setOrigin] = useState<LatLngLiteral | null>(null);
   const [destination, setDestination] = useState<LatLngLiteral | null>(null);
   const [directionsResponse, setDirectionsResponse] = useState<DirectionsResult>(null);
@@ -70,9 +71,11 @@ const hospitalIcon = window.google?.maps
   };
 
   const mapRef = useRef<GoogleMapsRef>(null);
-  
   const { token, userId } = useAuth()
   const user_id = userId;
+
+
+
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -92,7 +95,7 @@ const hospitalIcon = window.google?.maps
     }
   }, []);
 
-  //Useeffect para la peticion de origen
+  //Useeffect para enviar la posicion de la ambulancia a la base de datos con una direccion humana.
   useEffect(() => {
     const interval = setInterval(() => {
       updateAmbulanceLocation();
@@ -268,7 +271,7 @@ const hospitalIcon = window.google?.maps
           setDestination({ lat, lng }); 
           setSelectedAccident(assignedAccident);
           if (!hasShownModal) {
-            setShowModal(true); // Mostrar el modal solo una vez
+            setShowModal(true); // Mostrar el modal 
             setHasShownModal(true); // Marcar que ya se mostró el modal
             playSound("Accidente recibido"); // Reproducir sonido de alerta
           }
@@ -316,6 +319,7 @@ const hospitalIcon = window.google?.maps
   const handleConfirmFinalize  = async () => {
 
     setShowConfirmModal(false); 
+    setLastRouteAction(null);
     setRoute(null);
     setDestination(null);
     setClosestHospital(null)
@@ -323,6 +327,7 @@ const hospitalIcon = window.google?.maps
     setRouteStarted(false);
     setEstimatedTime("");
     setEndRouteShowModal(true);
+    //setHasShownModal(false);
     if (!token) return;
   
     try {
@@ -388,6 +393,10 @@ const hospitalIcon = window.google?.maps
     }
   };
   
+  const handleDetailsClick = () => {
+    setShowModal(true);
+  };
+
   const getRoute = async () => {
     if (!origin || !destination) return;
   
@@ -471,8 +480,14 @@ const hospitalIcon = window.google?.maps
   };
 
   
-
-
+  const handleRefresh = () => {
+    if (lastRouteAction === "hospital") {
+      getRouteToHospital(closestHospital);
+    } else if (lastRouteAction === "accidente") {
+      getRoute();
+    }
+  };
+  
   return (
     <>
     
@@ -518,7 +533,7 @@ const hospitalIcon = window.google?.maps
       <Modal.Title>Ruta Finalizada</Modal.Title>
     </Modal.Header>
     <Modal.Body>
-      <p>El servicio ha sido completado satisfactoriamente.</p>
+      <p>El servicio ha sido completado satisfactoriamente. <br />Le invitamos a completar la encuesta en: https://forms.gle/Q84yDim5VxnCzrnv8. Su participación es valiosa para mejorar el sistema.</p>
     </Modal.Body>
     <Modal.Footer>
       <Button variant="danger" onClick={() => setEndRouteShowModal(false)}>
@@ -540,14 +555,28 @@ const hospitalIcon = window.google?.maps
             </button>
             <button
               className="bg-green-500 text-white p-3 ml-2 rounded-lg"
-              onClick={findClosestHospital}
+              onClick={() => {
+              setLastRouteAction("hospital");
+              findClosestHospital()
+              }}
+              
               disabled={!origin}
             >
               Redireccion al hospital
             </button>
             <button
               className={`bg-blue-500 text-white p-3 ml-2 rounded-lg ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={handleStartRoute}
+              onClick={destination ? handleDetailsClick : selectedAccident}
+              disabled={!destination}
+            >
+              Detalles del accidente
+            </button>
+            <button
+              className={`bg-blue-500 text-white p-3 ml-2 rounded-lg ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={ () => {
+              setLastRouteAction("accidente");
+              handleStartRoute();
+              }}
               disabled={!destination}
             >
               Enrutar al accidente
@@ -558,6 +587,13 @@ const hospitalIcon = window.google?.maps
               disabled={!destination}
             >
               Ruta finalizada
+            </button>
+            <button
+              className={`bg-red-500 text-white p-3 ml-2 rounded-lg ${!lastRouteAction ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={handleRefresh}
+              disabled={!lastRouteAction}
+            >
+              Actualizar mapa
             </button>
           </div>
           {estimatedTime && <p>Tiempo estimado de llegada: {estimatedTime}</p>}
