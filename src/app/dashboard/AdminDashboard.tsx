@@ -7,12 +7,16 @@ import { AccidentReport } from "@/types/interfaces"
 import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import { NavLink } from "react-router"
+import Button from "@/components/ui/button/Button"
+import { useAuth } from "@/hooks/useAuth"
 
 // Icons
 import { FiPlusCircle, FiList } from "react-icons/fi"
 
 
 const AdminDashboard: React.FC = () => {
+    const { clearAuthInfo } = useAuth()
+
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [formData, setFormData] = useState({
@@ -94,6 +98,7 @@ const AdminDashboard: React.FC = () => {
     return (
         <>
             <h3>Admin dashboard</h3>
+            <Button onClick={clearAuthInfo}>Cerrar sesión</Button>
             <div className="p-4">
                 <div className="container flex gap-x-4">
                     <button

@@ -7,43 +7,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [token, setToken] = useState<string | null>(null)
     const [role, setRole] = useState<string | null>(null)
     const [userId, setUserId] = useState<number | null>(null)
-    const [email, setEmail] = useState<string | null>(null)
 
     useEffect(() => {
-        const storedToken = localStorage.getItem("token")
-        const storedRole = localStorage.getItem("role")
-        const storedUserId = localStorage.getItem("userId")
-        const storedEmail = localStorage.getItem("email")
+        const storedToken = sessionStorage.getItem("token")
+        const storedRole = sessionStorage.getItem("role")
+        const storedUserId = sessionStorage.getItem("userId")
 
         if (storedToken) setToken(storedToken)
         if (storedRole) setRole(storedRole)
         if (storedUserId) setUserId(parseInt(storedUserId))
-        if (storedEmail) setEmail(storedEmail)
     }, [])
 
-    const setAuthInfo = (token: string, role: string, userId: number, email: string) => {
+    const setAuthInfo = (token: string, role: string, userId: number) => {
         setToken(token)
         setRole(role)
         setUserId(userId)
-        setEmail(email)
-        localStorage.setItem("token", token)
-        localStorage.setItem("role", role)
-        localStorage.setItem("userId", userId.toString())
-        localStorage.setItem("email", email)
+        sessionStorage.setItem("token", token)
+        sessionStorage.setItem("role", role)
+        sessionStorage.setItem("userId", userId.toString())
     }
 
     const clearAuthInfo = () => {
         setToken(null)
         setRole(null)
         setUserId(null)
-        setEmail(null)
-        localStorage.removeItem("token")
-        localStorage.removeItem("role")
-        localStorage.removeItem("userId")
-        localStorage.removeItem("email")
+        sessionStorage.removeItem("token")
+        sessionStorage.removeItem("role")
+        sessionStorage.removeItem("userId")
     }
 
-    const value = useMemo(() => ({ token, role, userId, email, setAuthInfo, clearAuthInfo }), [token, role, userId, email]);
+    const value = useMemo(() => ({ token, role, userId, setAuthInfo, clearAuthInfo }), [token, role, userId]);
 
     return (
         <AuthContext.Provider value={value}>

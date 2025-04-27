@@ -3,7 +3,7 @@ import { AccidentReport } from "@/types/interfaces";
 
 export const reportAccident = async (data: AccidentReport) => {
     try {
-        const token: string | null = localStorage.getItem("token")
+        const token: string | null = sessionStorage.getItem("token")
         if (!token) {
             console.error("Es necesario incluir el token en cada petición a la API.")
         }
@@ -25,7 +25,7 @@ export const reportAccident = async (data: AccidentReport) => {
 
 export const getAccidentReports = async () => {
     try {
-        const token: string | null = localStorage.getItem("token")
+        const token: string | null = sessionStorage.getItem("token")
         if (!token) {
             throw new Error("Es necesario incluir el token en cada petición a la API.")
         }

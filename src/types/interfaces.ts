@@ -19,7 +19,6 @@ export interface AuthContextType {
     token: string | null
     role: string | null
     userId: number | null
-    email: string | null
-    setAuthInfo: (token: string, role: string, userId: number, email: string) => void
+    setAuthInfo: (token: string, role: string, userId: number) => void
     clearAuthInfo: () => void
 }
