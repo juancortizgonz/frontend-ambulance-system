@@ -37,7 +37,7 @@ const App = () => {
           onClick={handleLoginClick}
           className="bg-red-600 text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-red-400 transition w-48"
         >
-          Acceso Administradores
+          Acceso Usuarios
         </button>
         <button
           onClick={handleFaqClick}
