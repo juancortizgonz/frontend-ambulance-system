@@ -29,6 +29,7 @@ const hospitals = [
 ];
 
 const AmbulanceDashboard: React.FC = () => {
+  const [status, setStatus] = useState(null);
   const [lastRouteAction, setLastRouteAction] = useState<"hospital" | "accidente" | null>(null);
   const [origin, setOrigin] = useState<LatLngLiteral | null>(null);
   const [destination, setDestination] = useState<LatLngLiteral | null>(null);
@@ -145,6 +146,59 @@ const hospitalIcon = window.google?.maps
       }
     });
   };
+
+
+  useEffect(() => {
+    const fetchAmbulanceStatus = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/v1/ambulances/", {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        });
+  
+        const ambulances = await response.json();
+  
+        // Buscar la ambulancia asignada al usuario actual
+        const userAmbulance = ambulances.find((amb) => amb.user === user_id);
+  
+        if (!userAmbulance) {
+          console.error(`No se encontró una ambulancia asociada al usuario ${user_id}`);
+          return;
+        }
+  
+        const ambulanceId = userAmbulance.id;
+  
+        // Ahora hacemos la petición individual a esa ambulancia
+        const detailResponse = await fetch(
+          `http://localhost:8000/api/v1/ambulances/${ambulanceId}/`,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
+  
+        const data = await detailResponse.json();
+        setStatus(data.status.toLowerCase()); // Normalizamos
+      } catch (error) {
+        console.error("Error al obtener estado de ambulancia:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const intervalId = setInterval(() => {
+      fetchAmbulanceStatus();
+    }, 12000); // 12000 milisegundos = 12 segundos
+
+    if (user_id && token) {
+      fetchAmbulanceStatus();
+       // Limpia el intervalo cuando el componente se desmonte
+    return () => clearInterval(intervalId);
+    }
+  }, [user_id, token]);
+
+
 
   const findClosestHospital = async () => {
     if (!origin) return;
@@ -291,7 +345,58 @@ const hospitalIcon = window.google?.maps
     return () => clearInterval(intervalId);
   }, [token, user_id, hasShownModal]); // Agregar 'hasShownModal' a las dependencias
 
+
+
+
+
+
+ // Cambiar status entre available y in service
+ const handleToggleStatus = async () => {
+  // Cambia el estado entre 'available' y 'out_of_service'
+  let newStatus = status === "available" ? "out_of_service" : "available";
+
+  try {
+    const ambulanceResponse = await fetch(
+      `http://localhost:8000/api/v1/ambulances/${user_id}/`, // Usando el user_id correctamente
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`, // Autenticación con token
+        },
+        body: JSON.stringify({
+          status: newStatus, // El nuevo estado a cambiar
+        }),
+      }
+    );
+
+    if (ambulanceResponse.ok) {
+      console.log("✅ Estado actualizado exitosamente");
+      setStatus(newStatus); // Actualiza el estado en el front-end
+    } else {
+      const errorText = await ambulanceResponse.text(); // Muestra el error si la respuesta no es OK
+      console.error("❌ Error al actualizar el estado:", errorText);
+    }
+  } catch (error) {
+    console.error("🚨 Error en la solicitud:", error);
+  }
+};
+
   
+
+ const getButtonStyle = () => {
+  if (status === "available") return "bg-red-500 hover:bg-red-600";
+  if (status === "out_of_service") return "bg-green-500 hover:bg-green-600";  
+  if (status === "in_use") return "bg-gray-400 cursor-not-allowed opacity-50";
+  return "bg-gray-400 cursor-not-allowed";
+};
+
+const getButtonText = () => {
+  if (status === "available") return "Desconectar";
+  if (status === "out_of_service") return "Conectar";  // Aquí se usa "out_of_service" correctamente
+  return "En uso";
+};
+
   
   const handleStartRoute = () => {
     
@@ -533,7 +638,8 @@ const hospitalIcon = window.google?.maps
       <Modal.Title>Ruta Finalizada</Modal.Title>
     </Modal.Header>
     <Modal.Body>
-      <p>El servicio ha sido completado satisfactoriamente. <br />Le invitamos a completar la encuesta en: https://forms.gle/Q84yDim5VxnCzrnv8. Su participación es valiosa para mejorar el sistema.</p>
+      <p>El servicio ha sido completado satisfactoriamente. <br />Le invitamos a completar la encuesta en: <a href="https://forms.gle/Q84yDim5VxnCzrnv8" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">https://forms.gle/Q84yDim5VxnCzrnv8
+  </a>. Su participación es valiosa para mejorar el sistema.</p>
     </Modal.Body>
     <Modal.Footer>
       <Button variant="danger" onClick={() => setEndRouteShowModal(false)}>
@@ -553,6 +659,13 @@ const hospitalIcon = window.google?.maps
             <button className="bg-red-500 text-white p-3 ml-2 rounded-lg" onClick={handleClearDestination}>
               Limpiar destino actual
             </button>
+            <button
+            className={`${getButtonStyle()} text-white p-3 ml-2 rounded-lg`}
+            onClick={handleToggleStatus}
+            disabled={status === "in_use" || loading}
+          >
+            {loading ? "Cargando..." : getButtonText()}
+          </button>
             <button
               className="bg-green-500 text-white p-3 ml-2 rounded-lg"
               onClick={() => {

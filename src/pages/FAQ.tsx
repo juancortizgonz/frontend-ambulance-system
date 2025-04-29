@@ -6,10 +6,27 @@ import { Button } from "react-bootstrap";
 
 const FAQ = () => {
   const faqs = [
-    { question: "¿Cómo funciona el sistema de ambulancias?", answer: "" },
-    { question: "¿Cómo puedo solicitar asistencia?", answer: "El sistema de ambulancias funciona a través de una red de vehículos y personal médico que responden a llamadas de emergencia. Al recibir una llamada, se evalúa la gravedad de la situación y se envía la ambulancia adecuada al lugar. Durante el traslado, el personal médico proporciona atención y soporte vital al paciente hasta llegar al hospital." },
-    { question: "¿Qué hacer en caso de emergencia?", answer: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut et massa mi." },
-    { question: "¿Cómo contactar con soporte técnico?", answer: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut et massa mi." }
+    {
+      question: "¿Cómo funciona el sistema de ambulancias?",
+      answer:
+        "El sistema de ambulancias opera mediante la integración de diversas APIs de geolocalización que permiten identificar la ubicación del accidente en tiempo real. Con esta información, se calcula la ruta más eficiente para que la ambulancia llegue lo más rápido posible al lugar de la emergencia. Luego, una vez que el paciente ha sido estabilizado, el sistema genera una nueva ruta hacia el hospital más cercano, optimizando tiempos de respuesta y asegurando una atención médica más oportuna y eficaz.",
+    },
+    {
+      question: "¿Cuál es el fin del proyecto?",
+      answer:
+        "El principal objetivo del proyecto es ofrecer una alternativa tecnológica que combata la problemática conocida como la 'guerra del centavo' entre ambulancias, en la cual múltiples vehículos compiten por atender una misma emergencia. Nuestro sistema busca garantizar que solo una ambulancia sea asignada a cada accidente, eliminando la duplicidad de esfuerzos, mejorando la organización de la atención prehospitalaria y priorizando la seguridad del paciente y del personal médico.",
+    },
+    {
+      question: "¿Para quiénes está dirigido?",
+      answer:
+        "El sistema está diseñado especialmente para empresas prestadoras del servicio de ambulancia y su personal operativo. Está conformado por dos perfiles principales: los administradores, encargados de recibir reportes de accidentes, evaluar la severidad del incidente y asignar la ambulancia correspondiente; y los paramédicos, quienes a través de una interfaz interactiva reciben las alertas, visualizan la ruta a seguir y reportan el estado del servicio en tiempo real. Esta plataforma busca facilitar la coordinación interna y optimizar la respuesta ante emergencias.",
+    },
+    {
+      question: "¿Quiénes somos?",
+      answer:
+        "Somos un equipo de estudiantes de la Universidad del Valle que desarrolla este sistema como parte de nuestro trabajo de grado. Nuestro objetivo es proponer una solución tecnológica innovadora que contribuya a mejorar la atención prehospitalaria en la ciudad de Cali. Cada integrante del equipo aporta desde su experiencia y conocimientos en desarrollo de software, con el compromiso de crear una herramienta funcional, eficiente y que responda a una problemática real que afecta tanto a la comunidad como al sistema de salud local.",
+    }
+
   ];
 
   const [openIndex, setOpenIndex] = useState<number | null>(null);
