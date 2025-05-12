@@ -1,18 +1,17 @@
-import Modal from "@/components/Modal";
 import React, { useState } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { reportAccident } from "@/services/services";
 import { AccidentReport } from "@/types/interfaces";
 import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { NavLink } from "react-router";
-import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
-
-// Icons
 import { FiPlusCircle, FiList } from "react-icons/fi";
+import DatePicker from "react-datepicker";
+import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
+import "react-datepicker/dist/react-datepicker.css";
+import "react-toastify/dist/ReactToastify.css";
 
 const AdminDashboard: React.FC = () => {
+  const geocodingClientKey = import.meta.env.VITE_MAPBOX_GEOCODING;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [formData, setFormData] = useState({
@@ -28,6 +27,7 @@ const AdminDashboard: React.FC = () => {
     severity: "BASIC",
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -45,7 +45,7 @@ const AdminDashboard: React.FC = () => {
 
   const geocodingClient = mbxGeocoding({
     accessToken:
-      "sk.eyJ1IjoibmFuZG9sb3BlejciLCJhIjoiY21hbDl0b3d6MDZtZzJtcHJnYjM3enk0YiJ9.ZIU5hYXdi61IoiBG2Z8cow",
+      geocodingClientKey,
   });
 
   const getCoordinatesFromAddress = async (address) => {
@@ -170,7 +170,8 @@ const AdminDashboard: React.FC = () => {
           </NavLink>
         </div>
 
-        <Modal isOpen={isModalOpen} onClose={closeModal}>
+        {isModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-300 bg-opacity-50">
           <form
             onSubmit={handleSubmit}
             className="space-y-6 p-6 bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-auto"
@@ -353,7 +354,8 @@ const AdminDashboard: React.FC = () => {
               </button>
             </div>
           </form>
-        </Modal>
+        </div>
+        )}
       </div>
       <ToastContainer
         position="bottom-right"
