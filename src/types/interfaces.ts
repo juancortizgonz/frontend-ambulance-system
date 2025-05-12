@@ -1,4 +1,4 @@
-export interface AccidentReport {
+export interface IAccidentReport {
     accidentTime?: string
     createdAt?: string
     updatedAt?: string
