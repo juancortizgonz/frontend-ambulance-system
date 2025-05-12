@@ -1,221 +1,374 @@
-import Modal from "@/components/Modal"
-import React, { useState } from "react"
-import DatePicker from "react-datepicker"
-import "react-datepicker/dist/react-datepicker.css"
-import { reportAccident } from "@/services/services"
-import { AccidentReport } from "@/types/interfaces"
-import { ToastContainer, toast } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
-import { NavLink } from "react-router"
-
-// Icons
-import { FiPlusCircle, FiList } from "react-icons/fi"
-
+import React, { useState } from "react";
+import { reportAccident } from "@/services/services";
+import { AccidentReport } from "@/types/interfaces";
+import { ToastContainer, toast } from "react-toastify";
+import { NavLink } from "react-router";
+import { FiPlusCircle, FiList } from "react-icons/fi";
+import DatePicker from "react-datepicker";
+import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
+import "react-datepicker/dist/react-datepicker.css";
+import "react-toastify/dist/ReactToastify.css";
 
 const AdminDashboard: React.FC = () => {
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-    const [formData, setFormData] = useState({
-        accidentTime: "",
-        description: "",
-        isActive: true,
-        isResolved: false,
-        resolvedAt: "",
-        latitude: 0,
-        longitude: 0,
-        address: "",
-        assignedAmbulance: null,
-        severity: "BASIC"
-    })
-    const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const geocodingClientKey = import.meta.env.VITE_MAPBOX_GEOCODING;
 
-    const openModal = () => setIsModalOpen(true)
-    const closeModal = () => setIsModalOpen(false)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [formData, setFormData] = useState({
+    accidentTime: "",
+    description: "",
+    isActive: true,
+    isResolved: false,
+    resolvedAt: "",
+    latitude: 0,
+    longitude: 0,
+    address: "",
+    assignedAmbulance: null,
+    severity: "BASIC",
+  });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const element = e.target
-        const { name, value, type, checked } = element as HTMLInputElement
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: type === "checkbox" ? checked : value
-        }))
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const element = e.target;
+    const { name, value, type, checked } = element as HTMLInputElement;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const geocodingClient = mbxGeocoding({
+    accessToken:
+      geocodingClientKey,
+  });
+
+  const getCoordinatesFromAddress = async (address) => {
+    const response = await geocodingClient
+      .forwardGeocode({
+        query: address,
+        limit: 1,
+      })
+      .send();
+
+    const match = response.body.features[0];
+    if (match) {
+      return {
+        latitude: match.center[1],
+        longitude: match.center[0],
+      };
     }
+    return null;
+  };
 
-    const isValid = (): boolean => {
-        const newErrors: { [key: string]: string } = {}
-        if (!formData.address) newErrors.address = "La dirección del accidente es requerida."
-        if (!formData.severity) newErrors.severity = "La severidad del accidente es requerida."
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
+  const isValid = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.address)
+      newErrors.address = "La dirección del accidente es requerida.";
+    if (!formData.severity)
+      newErrors.severity = "La severidad del accidente es requerida.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const formatDate = (date: Date | null): string | undefined => {
+    if (!date) return undefined;
+    return date.toISOString().split(".")[0] + "Z";
+  };
+
+  const toSnakeCase = (obj: Record<string, any>): AccidentReport => {
+    const newObject: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const newKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+        newObject[newKey] = obj[key];
+      }
     }
+    return newObject;
+  };
 
-    const formatDate = (date: Date | null): string | undefined => {
-        if (!date) return undefined
-        return date.toISOString().split(".")[0] + "Z"
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isValid()) {
+      const data = {
+        ...formData,
+        accidentTime: formatDate(selectedDate),
+      };
 
-    const toSnakeCase = (obj: Record<string, any>): AccidentReport => {
-        const newObject: any = {}
-        for (const key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                const newKey = key.replace(/([A-Z])/g, "_$1").toLowerCase()
-                newObject[newKey] = obj[key]
-            }
+      const snakeCaseData = toSnakeCase(data);
+
+      try {
+        console.log(
+          `Data para el POST: ${JSON.stringify(snakeCaseData, null, 2)}`
+        );
+        await reportAccident(snakeCaseData);
+        toast.success("Reporte de accidente creado satisfactoriamente.");
+        closeModal();
+        setFormData({
+          accidentTime: "",
+          description: "",
+          isActive: true,
+          isResolved: false,
+          resolvedAt: "",
+          latitude: 0,
+          longitude: 0,
+          address: "",
+          assignedAmbulance: null,
+          severity: "BASIC",
+        });
+        setSelectedDate(null);
+        setErrors({});
+      } catch (error) {
+        if (error instanceof Error) {
+          if (
+            error.message.includes("Failed to fetch") ||
+            error.message.includes("NetworkError")
+          ) {
+            toast.error(
+              "No se pudo conectar con el servidor. Verifique su conexión o intente más tarde."
+            );
+          } else {
+            toast.error("Hubo un error al crear el reporte. Intente de nuevo.");
+          }
+          console.error(`Ocurrió un error al reportar el accidente: ${error}`);
+        } else {
+          console.error(`Ocurrió un error desconocido: ${error}`);
         }
-        return newObject
+      }
     }
+  };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (isValid()) {
-            const data = {
-                ...formData,
-                accidentTime: formatDate(selectedDate),
-            }
+  return (
+    <>
+      <h3>Admin dashboard</h3>
+      <div className="p-4">
+        <div className="container flex gap-x-4">
+          <button
+            onClick={openModal}
+            className="flex items-center justify-center p-4 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                openModal();
+              }
+            }}
+          >
+            <FiPlusCircle className="mr-2" size={24} />
+            Reportar un nuevo accidente
+          </button>
+          <NavLink
+            to="/history"
+            className="flex items-center justify-center p-4 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
+          >
+            <FiList className="mr-2" size={24} />
+            Ver historial de accidentes
+          </NavLink>
+        </div>
 
-            const snakeCaseData = toSnakeCase(data)
+        {isModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-300 bg-opacity-50">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6 p-6 bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-auto"
+          >
+            <header className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Crear reporte de accidente
+              </h2>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                <span className="text-2xl">&times;</span>
+              </button>
+            </header>
 
-            try {
-                console.log(`Data para el POST: ${JSON.stringify(snakeCaseData, null, 2)}`)
-                await reportAccident(snakeCaseData)
-                toast.success("Reporte de accidente creado satisfactoriamente.")
-                closeModal()
-            } catch (error) {
-                if (error instanceof Error) {
-                    toast.error("Hubo un error al crear el reporte. Intente de nuevo.")
-                    console.error(`Ocurrió un error al reportar el accidente: ${error}`)
-                } else {
-                    console.error(`Ocurrió un error desconocido: ${error}`)
-                }
-            }
-        }
-    }
-
-    return (
-        <>
-            <h3>Admin dashboard</h3>
-            <div className="p-4">
-                <div className="container flex gap-x-4">
-                    <button
-                        onClick={openModal}
-                        className="flex items-center justify-center p-4 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                openModal();
-                            }
-                        }}
-                    >
-                        <FiPlusCircle className="mr-2" size={24} />
-                        Reportar un nuevo accidente
-                    </button>
-                    <NavLink 
-                        to="/history" 
-                        className="flex items-center justify-center p-4 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
-                            <FiList className="mr-2" size={24} />
-                            Ver historial de accidentes
-                    </NavLink>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Izquierda */}
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="accidentDate"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Fecha y hora
+                  </label>
+                  <DatePicker
+                    id="accidentDate"
+                    selected={selectedDate}
+                    onChange={(date) => setSelectedDate(date)}
+                    showTimeSelect
+                    dateFormat="Pp"
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
                 </div>
+                <div>
+                  <label
+                    htmlFor="description"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Descripción
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    rows={4}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    placeholder="Describe el incidente"
+                  />
+                </div>
+                <div className="flex items-center space-x-6">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      name="isActive"
+                      checked={formData.isActive}
+                      onChange={handleChange}
+                      className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Activo</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      name="isResolved"
+                      checked={formData.isResolved}
+                      onChange={handleChange}
+                      className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Resuelto</span>
+                  </label>
+                </div>
+              </div>
 
-                <Modal isOpen={isModalOpen} onClose={closeModal}>
-                    <form onSubmit={handleSubmit} className="flex flex-col">
-
-                        <h2 className="text-3xl font-bold mb-4">Crear un nuevo reporte de accidente</h2>
-                        <div className="flex gap-x-8">
-                            <div className="w-1/2">
-                                <div className="mb-4">
-                                    <label htmlFor="accidentDate" className="block text-gray-700 font-semibold">Fecha del accidente</label>
-                                    <DatePicker
-                                        id="accidentDate"
-                                        selected={selectedDate}
-                                        onChange={(date) => setSelectedDate(date)}
-                                        showTimeSelect
-                                        dateFormat="Pp"
-                                        className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div className="mb-4">
-                                    <label htmlFor="description" className="block text-gray-700 font-semibold">Descripción</label>
-                                    <textarea
-                                        id="description"
-                                        className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        onChange={handleChange}
-                                        name="description"
-                                    ></textarea>
-                                </div>
-                                <div className="mb-4">
-                                    <label htmlFor="isActive" className="block text-gray-700 font-semibold">¿Está activo?</label>
-                                    <input
-                                        type="checkbox"
-                                        className="w-6 h-6 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        id="isActive"
-                                        name="isActive"
-                                        defaultChecked={true}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div className="mb-4">
-                                    <label htmlFor="isResolved" className="block text-gray-700 font-semibold">¿Está resuelto?</label>
-                                    <input
-                                        type="checkbox"
-                                        className="w-6 h-6 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        defaultChecked={false}
-                                        onChange={handleChange}
-                                        name="isResolved"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="mb-4">
-                                    <label htmlFor="severity" className="block text-gray-700 font-semibold">Nivel del accidente</label>
-                                    <input id="severity" placeholder="Selecciona un nivel" type="text" list="severityOptions" name="severity" onChange={handleChange} />
-                                    <datalist id="severityOptions">
-                                        <option value="BASIC">Básico</option>
-                                        <option value="UCI">UCI</option>
-                                    </datalist>
-                                    {errors.severity && <p className="text-red-500">{errors.severity}</p>}
-                                </div>
-
-                                <div className="mb-4">
-                                    <label htmlFor="latitude" className="block text-gray-700 font-semibold">Latitud</label>
-                                    <input id="latitude" placeholder="Latitud" type="number" step="any" name="latitude" onChange={handleChange} className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                </div>
-
-                                <div className="mb-4">
-                                    <label htmlFor="longitude" className="block text-gray-700 font-semibold">Longitud</label>
-                                    <input id="longitude" placeholder="Longitud" type="number" step="any" name="longitude" onChange={handleChange} className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                </div>
-
-                                <div className="mb-4">
-                                    <label htmlFor="address" className="block text-gray-700 font-semibold">Dirección del incidente</label>
-                                    <input id="address" placeholder="Dirección detallada del incidente" type="text" name="address" onChange={handleChange} className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                    {errors.address && <p className="text-red-500">{errors.address}</p>}
-                                </div>
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
-                        >
-                            Guardar
-                        </button>
-                    </form>
-                </Modal>
+              {/* Derecha */}
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="severity"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Severidad
+                  </label>
+                  <select
+                    id="severity"
+                    name="severity"
+                    value={formData.severity}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  >
+                    <option value="BASIC">Básico</option>
+                    <option value="UCI">UCI</option>
+                  </select>
+                  {errors.severity && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {errors.severity}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label
+                    htmlFor="address"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Dirección
+                  </label>
+                  <input
+                    id="address"
+                    name="address"
+                    type="text"
+                    onChange={async (e) => {
+                      handleChange(e);
+                      const coords = await getCoordinatesFromAddress(
+                        e.target.value
+                      );
+                      if (coords)
+                        setFormData((prev) => ({ ...prev, ...coords }));
+                    }}
+                    placeholder="Ej. Calle 123 #45-67"
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+                  {errors.address && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {errors.address}
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="latitude"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Latitud
+                    </label>
+                    <input
+                      id="latitude"
+                      name="latitude"
+                      type="number"
+                      value={formData.latitude || ""}
+                      readOnly
+                      className="mt-1 block w-full rounded-lg bg-gray-100 border-gray-300 shadow-inner py-2 px-3 text-sm text-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="longitude"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Longitud
+                    </label>
+                    <input
+                      id="longitude"
+                      name="longitude"
+                      type="number"
+                      value={formData.longitude || ""}
+                      readOnly
+                      className="mt-1 block w-full rounded-lg bg-gray-100 border-gray-300 shadow-inner py-2 px-3 text-sm text-gray-600"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            <ToastContainer
-                position="bottom-right"
-                autoClose={5000}
-                hideProgressBar={false}
-                newestOnTop={false}
-                closeOnClick
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-            />
-        </>
-    )
-}
+
+            <div className="flex justify-end space-x-4 pt-4 border-t">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition transform hover:-translate-y-0.5"
+              >
+                Guardar
+              </button>
+            </div>
+          </form>
+        </div>
+        )}
+      </div>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+    </>
+  );
+};
 
 export default AdminDashboard;
