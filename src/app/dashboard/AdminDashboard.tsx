@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { reportAccident, getAccidentReports } from "@/services/services";
+import { reportAccident } from "@/services/services";
+import AccidentReportsTable from "@/components/dashboard/admin/AccidentReportsTable";
 import { IAccidentReport } from "@/types/interfaces";
 import { ToastContainer, toast } from "react-toastify";
 import { NavLink } from "react-router";
@@ -8,64 +9,11 @@ import DatePicker from "react-datepicker";
 import Button from "@/components/ui/button/Button"
 import { useAuth } from "@/hooks/useAuth"
 import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table"
 
 import "react-datepicker/dist/react-datepicker.css";
 import "react-toastify/dist/ReactToastify.css";
-
-type AccidentReport = {
-  id: number
-  address: string
-  severity: "BASIC" | "UCI"
-  accident_time: string
-  is_resolved: boolean
-  description: string
-}
-
-type Ambulance = {
-  id: string
-  name: string
-  distance: number // en km
-  estimatedTime: number // en minutos
-  available: boolean
-  crew: number // número de personal
-}
-
-// Ambulancias disponibles (datos quemados por ahora)
-const availableAmbulances: Ambulance[] = [
-  {
-    id: "AMB-001",
-    name: "Unidad 101",
-    distance: 1.2,
-    estimatedTime: 4,
-    available: true,
-    crew: 3,
-  },
-  {
-    id: "AMB-002",
-    name: "Unidad 205",
-    distance: 2.5,
-    estimatedTime: 8,
-    available: true,
-    crew: 2,
-  },
-  {
-    id: "AMB-003",
-    name: "Unidad 310",
-    distance: 3.7,
-    estimatedTime: 12,
-    available: true,
-    crew: 4,
-  },
-  {
-    id: "AMB-004",
-    name: "Unidad 422",
-    distance: 5.1,
-    estimatedTime: 15,
-    available: true,
-    crew: 3,
-  },
-]
+import api from "@/api/api";
+import { AccidentReport } from "@/types/types";
 
 // Iconos SVG inline
 const MapPinIcon = () => (
@@ -158,118 +106,12 @@ const CloseIcon = () => (
   </svg>
 )
 
-const columnHelper = createColumnHelper<AccidentReport>()
-
 const AdminDashboard: React.FC = () => {
   const geocodingClientKey = import.meta.env.VITE_MAPBOX_GEOCODING;
 
-  const [selectedReport, setSelectedReport] = useState<AccidentReport | null>(null)
-  const [isModalAccidentReportOpen, setIsModalAccidentReportOpen] = useState(false)
-  const [accidentReports, setAccidentReports] = useState<AccidentReport[]>([])
-
-  // Definición de columnas
-  const columns = [
-    columnHelper.accessor("id", {
-      header: "ID",
-      cell: (info) => info.getValue(),
-    }),
-    columnHelper.accessor("address", {
-      header: "Ubicación",
-      cell: (info) => (
-        <div className="flex items-center gap-2">
-          <MapPinIcon />
-          <span>{info.getValue()}</span>
-        </div>
-      ),
-    }),
-    columnHelper.accessor("severity", {
-      header: "Severidad",
-      cell: (info) => {
-        const severity = info.getValue()
-        return (
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${severity === "UCI"
-              ? "bg-red-100 text-red-800"
-              : "bg-yellow-100 text-yellow-800"
-              }`}
-          >
-            {severity.valueOf() === "UCI" ? "Grave - UCI" : "Atención básica"}
-          </span>
-        )
-      },
-    }),
-    columnHelper.accessor("accident_time", {
-      header: "Hora",
-      cell: (info) => (
-        <div className="flex items-center gap-2">
-          <ClockIcon />
-          <span>{new Date(info.getValue()).toLocaleString()}</span>
-        </div>
-      ),
-    }),
-    columnHelper.accessor("is_resolved", {
-      header: "Estado",
-      cell: (info) => {
-        const status = info.getValue()
-        return (
-          <span
-            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${status
-              ? "border-green-500 text-green-500"
-              : "border-orange-500 text-orange-500"
-              }`}
-          >
-            {status.valueOf() ? "Resuelto" : "Pendiente"}
-          </span>
-        )
-      },
-    }),
-    columnHelper.accessor("description", {
-      header: "Descripción",
-      cell: (info) => (
-        <div className="max-w-xs truncate" title={info.getValue()}>
-          {info.getValue()}
-        </div>
-      ),
-    }),
-    columnHelper.display({
-      id: "actions",
-      header: "Acciones",
-      cell: (info) => {
-        const isResolved = info.row.original.is_resolved; // Obtener el estado del reporte
-        return (
-          <button
-            className={`inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${isResolved
-                ? "bg-gray-400 text-gray-700 cursor-not-allowed" // Estilo para botón deshabilitado
-                : "bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500"
-              }`}
-            onClick={() => {
-              if (!isResolved) {
-                setSelectedReport(info.row.original);
-                setIsModalAccidentReportOpen(true);
-              }
-            }}
-            disabled={isResolved} // Deshabilitar si el reporte está resuelto
-          >
-            Asignar ambulancia
-          </button>
-        );
-      },
-    }),
-  ]
-
-  const table = useReactTable({
-    data: accidentReports,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  })
-
-  // Función para asignar ambulancia (simulada por ahora)
-  const assignAmbulance = (ambulanceId: string) => {
-    console.log(`Asignando ambulancia ${ambulanceId} al reporte ${selectedReport?.id}`)
-    setIsModalOpen(false)
-  }
-
   const { clearAuthInfo } = useAuth()
+
+  const [accidentReportsFetched, setAccidentReportsFetched] = useState<AccidentReport[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -410,16 +252,16 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const fetchAccidentReports = async () => {
       try {
-        const response = await getAccidentReports();
-        console.log(`Accident reports fetched: ${JSON.stringify(response, null, 2)}`);
-        setAccidentReports(response);
+        const response = await api.get("/accident-reports/")
+        setAccidentReportsFetched(response.data);
+        console.log("Accident reports fetched successfully:", response.data);
       } catch (error) {
         console.error("Error fetching accident reports:", error);
       }
-    };
+    }
 
     fetchAccidentReports();
-  }, [])
+  }, []);
 
   return (
     <>
@@ -635,6 +477,9 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
       </div>
+      <div>
+        <AccidentReportsTable data={accidentReportsFetched} />
+      </div>
       <ToastContainer
         position="bottom-right"
         autoClose={5000}
@@ -645,122 +490,6 @@ const AdminDashboard: React.FC = () => {
         draggable
         pauseOnHover
       />
-      <div className="w-10/12 mx-auto my-8">
-        <div className="rounded-md border">
-          <table className="w-full">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="border-b bg-gray-50">
-                  {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-b hover:bg-gray-50">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Modal personalizado para asignar ambulancia */}
-        {isModalAccidentReportOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-50"
-            role="dialog"
-            tabIndex={-1}
-            onClick={(e) => {
-              // Cierra el modal si el clic ocurre fuera del contenido del modal
-              if (e.target === e.currentTarget) {
-                setIsModalAccidentReportOpen(false);
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                setIsModalAccidentReportOpen(false);
-              }
-            }}
-          >
-            <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Asignar ambulancia</h3>
-                <button
-                  onClick={() => setIsModalAccidentReportOpen(false)}
-                  className="rounded-full p-1 hover:bg-gray-100"
-                  aria-label="Cerrar modal"
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-
-              <div className="py-4">
-                {selectedReport && (
-                  <div className="mb-4 rounded-md bg-gray-50 p-3 text-sm">
-                    <p className="font-medium">Reporte: {selectedReport.id}</p>
-                    <p className="flex items-center gap-1 text-gray-600">
-                      <MapPinIcon /> {selectedReport.address}
-                    </p>
-                    <p className="mt-1 text-gray-600">{selectedReport.description}</p>
-                  </div>
-                )}
-
-                <h3 className="mb-2 text-sm font-medium">Ambulancias disponibles:</h3>
-                <div className="space-y-3">
-                  {availableAmbulances.map((ambulance, index) => (
-                    <div
-                      key={ambulance.id}
-                      className={`relative rounded-lg border p-3 ${index === 0 ? "border-2 border-green-500 bg-green-50" : "border-gray-200"
-                        }`}
-                    >
-                      {index === 0 && (
-                        <div className="absolute right-2 top-2">
-                          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                            Recomendada
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-medium">{ambulance.name}</p>
-                          <div className="mt-1 space-y-1 text-sm text-gray-600">
-                            <p className="flex items-center gap-1">
-                              <MapPinIcon /> A {ambulance.distance} km
-                            </p>
-                            <p className="flex items-center gap-1">
-                              <ClockIcon /> Tiempo estimado: {ambulance.estimatedTime} min
-                            </p>
-                            <p className="flex items-center gap-1">
-                              {ambulance.crew >= 3 ? <CheckCircleIcon /> : <AlertTriangleIcon />} Personal:{" "}
-                              {ambulance.crew}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => assignAmbulance(ambulance.id)}
-                          className={`rounded-md px-3 py-1.5 text-sm font-medium text-white ${index === 0 ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
-                            }`}
-                        >
-                          Asignar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </>
   );
 };

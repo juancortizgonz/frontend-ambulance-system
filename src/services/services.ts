@@ -1,5 +1,5 @@
 import api from "@/api/api"
-import { AccidentReport } from "@/types/interfaces";
+import { AccidentReport } from "@/types/types";
 
 export const reportAccident = async (data: AccidentReport) => {
     try {
@@ -35,9 +35,8 @@ export const getAccidentReports = async () => {
                 Authorization: `Token ${token}`
             }
         }
-        console.log(config.headers)
 
-        const response = await api.get("/accident-reports", config)
+        const response = await api.get("/accident-reports/", config)
         return response.data
     } catch (error) {
         console.error(`Error obteniendo los reportes de accidentes: ${error}`)
