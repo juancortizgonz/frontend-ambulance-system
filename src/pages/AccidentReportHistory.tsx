@@ -54,10 +54,10 @@ const AccidentReportHistory = () => {
     return (
         <BaseLayout>
             <div className="container mx-auto p-4 flex flex-col items-center">
-                <h1 className="font-bold text-2xl my-4">Accident report history</h1>
+                <h1 className="font-bold text-2xl my-4">Historial de reportes</h1>
                 <div className="mb-4">
-                    <button onClick={() => downloadPDF(data, columns)} className="mr-2 p-2 bg-blue-500 text-white rounded">Download PDF</button>
-                    <button onClick={() => downloadCSV(data, columns)} className="p-2 bg-green-500 text-white rounded">Download CSV</button>
+                    <button onClick={() => downloadPDF(data, columns)} className="mr-2 py-2 px-3 bg-blue-500 text-white rounded-sm">Descargar en PDF</button>
+                    <button onClick={() => downloadCSV(data, columns)} className="py-2 px-3 bg-green-500 text-white rounded-sm">Descargar en CSV</button>
                 </div>
                 <div className="w-full overflow-x-auto">
                     <AccidentReportsTable data={data} />

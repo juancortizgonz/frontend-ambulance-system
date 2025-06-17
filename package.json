@@ -20,6 +20,7 @@
     "jspdf": "^3.0.0",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.471.1",
+    "mapbox-gl": "^3.13.0",
     "papaparse": "^5.5.2",
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.9",
