@@ -6,14 +6,13 @@ import { ToastContainer, toast } from "react-toastify";
 import { NavLink } from "react-router";
 import { FiPlusCircle, FiList } from "react-icons/fi";
 import DatePicker from "react-datepicker";
-import Button from "@/components/ui/button/Button"
-import { useAuth } from "@/hooks/useAuth"
 import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "react-toastify/dist/ReactToastify.css";
 import api from "@/api/api";
 import { AccidentReport } from "@/types/types";
+import BaseLayout from "@/layouts/BaseLayout";
 
 // Iconos SVG inline
 const MapPinIcon = () => (
@@ -109,8 +108,6 @@ const CloseIcon = () => (
 const AdminDashboard: React.FC = () => {
   const geocodingClientKey = import.meta.env.VITE_MAPBOX_GEOCODING;
 
-  const { clearAuthInfo } = useAuth()
-
   const [accidentReportsFetched, setAccidentReportsFetched] = useState<AccidentReport[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -184,7 +181,11 @@ const AdminDashboard: React.FC = () => {
 
   const formatDate = (date: Date | null): string | undefined => {
     if (!date) return undefined;
-    return date.toISOString().split(".")[0] + "Z";
+    
+    const iso = date.toISOString();
+    const [datePart, timePart] = iso.split("T");
+    const [hms, msZ] = timePart.split(".");
+    return `${datePart}T${hms}.000000Z`;
   };
 
   const toSnakeCase = (obj: Record<string, any>): IAccidentReport => {
@@ -264,14 +265,12 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   return (
-    <>
-      <h3>Admin dashboard</h3>
-      <Button onClick={clearAuthInfo}>Cerrar sesión</Button>
+    <BaseLayout>
       <div className="p-4">
-        <div className="container flex gap-x-4">
+        <div className="container flex justify-center gap-x-2">
           <button
             onClick={openModal}
-            className="flex items-center justify-center p-4 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105"
+            className="flex items-center justify-center p-4 bg-orange-500 text-white rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-opacity-50 transition duration-300 ease-in-out font-semibold rounded-sm"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -280,11 +279,11 @@ const AdminDashboard: React.FC = () => {
             }}
           >
             <FiPlusCircle className="mr-2" size={24} />
-            Reportar un nuevo accidente
+            Generar nuevo reporte
           </button>
           <NavLink
             to="/history"
-            className="flex items-center justify-center p-4 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:scale-105">
+            className="flex items-center justify-center p-4 bg-green-600 font-semibold text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out rounded-sm">
             <FiList className="mr-2" size={24} />
             Ver historial de accidentes
           </NavLink>
@@ -490,7 +489,7 @@ const AdminDashboard: React.FC = () => {
         draggable
         pauseOnHover
       />
-    </>
+    </BaseLayout>
   );
 };
 

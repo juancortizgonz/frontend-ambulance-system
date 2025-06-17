@@ -5,7 +5,8 @@ import { AccidentReport } from "@/types/types"
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table"
 import { downloadPDF, downloadCSV } from "@/utils/exportUtils"
 import { format } from "date-fns"
-import { info } from "console"
+import BaseLayout from "@/layouts/BaseLayout"
+import AccidentReportsTable from "@/components/dashboard/admin/AccidentReportsTable"
 
 const AccidentReportHistory = () => {
     const [data, setData] = useState<AccidentReport[]>(() => [])
@@ -21,8 +22,6 @@ const AccidentReportHistory = () => {
         };
         fetchData();
     }, []);
-
-    console.log(`Data from the API: ${JSON.stringify(data)}`)
 
     const columns = [
         { header: "ID", accessorKey: "id" as keyof AccidentReport },
@@ -52,21 +51,19 @@ const AccidentReportHistory = () => {
         }
     ]
 
-    const table = useReactTable({
-        columns,
-        data,
-        getCoreRowModel: getCoreRowModel(),
-    })
-
     return (
-        <div className="container mx-auto p-4 flex flex-col items-center">
-            <h1 className="font-bold text-2xl my-4">Accident report history</h1>
-            <div className="mb-4">
-                <button onClick={() => downloadPDF(data, columns)} className="mr-2 p-2 bg-blue-500 text-white rounded">Download PDF</button>
-                <button onClick={() => downloadCSV(data, columns)} className="p-2 bg-green-500 text-white rounded">Download CSV</button>
+        <BaseLayout>
+            <div className="container mx-auto p-4 flex flex-col items-center">
+                <h1 className="font-bold text-2xl my-4">Accident report history</h1>
+                <div className="mb-4">
+                    <button onClick={() => downloadPDF(data, columns)} className="mr-2 p-2 bg-blue-500 text-white rounded">Download PDF</button>
+                    <button onClick={() => downloadCSV(data, columns)} className="p-2 bg-green-500 text-white rounded">Download CSV</button>
+                </div>
+                <div className="w-full overflow-x-auto">
+                    <AccidentReportsTable data={data} />
+                </div>
             </div>
-            <Table table={table} />
-        </div>
+        </BaseLayout>
     )
 }
 
