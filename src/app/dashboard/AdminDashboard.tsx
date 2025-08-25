@@ -268,19 +268,14 @@ const AdminDashboard: React.FC = () => {
     <BaseLayout>
       <div className="p-4">
         <div className="container flex justify-center gap-x-2">
-          <button
-            onClick={openModal}
+          <a
+            href="/create-report"
             className="flex items-center justify-center p-4 bg-orange-500 text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-opacity-50 transition duration-300 ease-in-out font-semibold rounded-sm"
             tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                openModal();
-              }
-            }}
           >
             <FiPlusCircle className="mr-2" size={24} />
             Generar nuevo reporte
-          </button>
+          </a>
           <NavLink
             to="/history"
             className="flex items-center justify-center p-4 bg-green-600 font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out rounded-sm">
