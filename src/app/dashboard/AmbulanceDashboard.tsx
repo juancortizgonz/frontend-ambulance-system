@@ -29,10 +29,11 @@ const hospitals = [
 ];
 
 const AmbulanceDashboard: React.FC = () => {
+  const [status, setStatus] = useState(null);
+  const [lastRouteAction, setLastRouteAction] = useState<"hospital" | "accidente" | null>(null);
   const [origin, setOrigin] = useState<LatLngLiteral | null>(null);
-  const [destination, setDestination] = useState<string>("");
+  const [destination, setDestination] = useState<LatLngLiteral | null>(null);
   const [directionsResponse, setDirectionsResponse] = useState<DirectionsResult>(null);
-  const [destinationMarker, setDestinationMarker] = useState<LatLngLiteral | null>(null);
   const [routeStarted, setRouteStarted] = useState<boolean>(false);
   const [showModal, setShowModal] = useState(false);
   const [showEndRouteModal, setEndRouteShowModal] = useState(false);
@@ -41,10 +42,41 @@ const AmbulanceDashboard: React.FC = () => {
   const [route, setRoute] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [estimatedTime, setEstimatedTime] = useState<string>("");
+  const [closestHospital, setClosestHospital] = useState<LatLngLiteral | null>(null); // Estado para almacenar el hospital más cercano
+  const [hasShownModal, setHasShownModal] = useState(false); // Nueva bandera para controlar la visualización del modal
+
+  const originIcon = window.google?.maps
+  ? {
+      url: "https://img.icons8.com/plasticine/100/ambulance.png",
+      scaledSize: { width: 40, height: 40 }, 
+    }
+  : undefined;
+
+const destinationIcon = window.google?.maps
+  ? {
+      url: "https://img.icons8.com/color/48/car-crash.png",
+      scaledSize: { width: 50, height: 50 }, 
+    }
+  : undefined;
+
+const hospitalIcon = window.google?.maps
+  ? {
+      url: "https://img.icons8.com/dusk/64/hospital.png",
+      scaledSize: { width: 40, height: 40 }, 
+    }
+  : undefined;
+
+  const playSound = (message) => {
+    const utterance = new SpeechSynthesisUtterance(message);
+    speechSynthesis.speak(utterance);
+  };
+
   const mapRef = useRef<GoogleMapsRef>(null);
-  
   const { token, userId } = useAuth()
   const user_id = userId;
+
+
+
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -64,7 +96,7 @@ const AmbulanceDashboard: React.FC = () => {
     }
   }, []);
 
-  //Useeffect para la peticion de origen
+  //Useeffect para enviar la posicion de la ambulancia a la base de datos con una direccion humana.
   useEffect(() => {
     const interval = setInterval(() => {
       updateAmbulanceLocation();
@@ -115,6 +147,59 @@ const AmbulanceDashboard: React.FC = () => {
     });
   };
 
+
+  useEffect(() => {
+    const fetchAmbulanceStatus = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/v1/ambulances/", {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        });
+  
+        const ambulances = await response.json();
+  
+        // Buscar la ambulancia asignada al usuario actual
+        const userAmbulance = ambulances.find((amb) => amb.user === user_id);
+  
+        if (!userAmbulance) {
+          console.error(`No se encontró una ambulancia asociada al usuario ${user_id}`);
+          return;
+        }
+  
+        const ambulanceId = userAmbulance.id;
+  
+        // Ahora hacemos la petición individual a esa ambulancia
+        const detailResponse = await fetch(
+          `http://localhost:8000/api/v1/ambulances/${ambulanceId}/`,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
+  
+        const data = await detailResponse.json();
+        setStatus(data.status.toLowerCase()); // Normalizamos
+      } catch (error) {
+        console.error("Error al obtener estado de ambulancia:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const intervalId = setInterval(() => {
+      fetchAmbulanceStatus();
+    }, 12000); // 12000 milisegundos = 12 segundos
+
+    if (user_id && token) {
+      fetchAmbulanceStatus();
+       // Limpia el intervalo cuando el componente se desmonte
+    return () => clearInterval(intervalId);
+    }
+  }, [user_id, token]);
+
+
+
   const findClosestHospital = async () => {
     if (!origin) return;
   
@@ -140,8 +225,9 @@ const AmbulanceDashboard: React.FC = () => {
           }
   
           const closestHospital = hospitals[minIndex];
+          setClosestHospital(closestHospital); // Guardamos el hospital más cercano en el estado
           setRouteStarted(true);
-  
+          
           // Llamar a la API Routes para obtener la ruta al hospital más cercano
           await getRouteToHospital(closestHospital);
         }
@@ -238,9 +324,11 @@ const AmbulanceDashboard: React.FC = () => {
           console.log("Coordenadas del accidente antes de actualizar estado:", lat, lng);
           setDestination({ lat, lng }); 
           setSelectedAccident(assignedAccident);
-          setShowModal(true);
-
-          console.log("Coordenadas del accidente después de actualizar estado:", lat, lng);
+          if (!hasShownModal) {
+            setShowModal(true); // Mostrar el modal 
+            setHasShownModal(true); // Marcar que ya se mostró el modal
+            playSound("Accidente recibido"); // Reproducir sonido de alerta
+          }
         } else {
           console.log("No se encontró un accidente asignado a la ambulancia 1 que no esté resuelto.");
         }
@@ -248,10 +336,67 @@ const AmbulanceDashboard: React.FC = () => {
         console.error("Error obteniendo los reportes de accidentes:", error);
       }
     };
+    fetchAccidentReports(); // Ejecutar la primera vez de inmediato
+
+    // Ejecutar la función de forma periódica
+    const intervalId = setInterval(fetchAccidentReports, 12000); // Cada 10 segundos
+
+    // Limpiar intervalo cuando el componente se desmonte
+    return () => clearInterval(intervalId);
+  }, [token, user_id, hasShownModal]); // Agregar 'hasShownModal' a las dependencias
+
+
+
+
+
+
+ // Cambiar status entre available y in service
+ const handleToggleStatus = async () => {
+  // Cambia el estado entre 'available' y 'out_of_service'
+  let newStatus = status === "available" ? "out_of_service" : "available";
+
+  try {
+    const ambulanceResponse = await fetch(
+      `http://localhost:8000/api/v1/ambulances/${user_id}/`, // Usando el user_id correctamente
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`, // Autenticación con token
+        },
+        body: JSON.stringify({
+          status: newStatus, // El nuevo estado a cambiar
+        }),
+      }
+    );
+
+    if (ambulanceResponse.ok) {
+      console.log("✅ Estado actualizado exitosamente");
+      setStatus(newStatus); // Actualiza el estado en el front-end
+    } else {
+      const errorText = await ambulanceResponse.text(); // Muestra el error si la respuesta no es OK
+      console.error("❌ Error al actualizar el estado:", errorText);
+    }
+  } catch (error) {
+    console.error("🚨 Error en la solicitud:", error);
+  }
+};
+
   
-    fetchAccidentReports();
-  }, []);
-  
+
+ const getButtonStyle = () => {
+  if (status === "available") return "bg-red-500 hover:bg-red-600";
+  if (status === "out_of_service") return "bg-green-500 hover:bg-green-600";  
+  if (status === "in_use") return "bg-gray-400 cursor-not-allowed opacity-50";
+  return "bg-gray-400 cursor-not-allowed";
+};
+
+const getButtonText = () => {
+  if (status === "available") return "Desconectar";
+  if (status === "out_of_service") return "Conectar";  // Aquí se usa "out_of_service" correctamente
+  return "En uso";
+};
+
   
   const handleStartRoute = () => {
     
@@ -263,13 +408,13 @@ const AmbulanceDashboard: React.FC = () => {
 
 
   const handleClearDestination = () => {
-    setDestination("");
+    setDestination(null);
     setRoute(null);
     setDirectionsResponse(null);
-    setDestinationMarker(null);
     setRouteStarted(false);
     setEstimatedTime("");
     setSelectedAccident(null);
+    setClosestHospital(null)
   };
 
   const handleFinalize = async () => {
@@ -279,13 +424,15 @@ const AmbulanceDashboard: React.FC = () => {
   const handleConfirmFinalize  = async () => {
 
     setShowConfirmModal(false); 
+    setLastRouteAction(null);
     setRoute(null);
-    setDestination("");
+    setDestination(null);
+    setClosestHospital(null)
     setDirectionsResponse(null);
-    setDestinationMarker(null);
     setRouteStarted(false);
     setEstimatedTime("");
     setEndRouteShowModal(true);
+    //setHasShownModal(false);
     if (!token) return;
   
     try {
@@ -351,6 +498,10 @@ const AmbulanceDashboard: React.FC = () => {
     }
   };
   
+  const handleDetailsClick = () => {
+    setShowModal(true);
+  };
+
   const getRoute = async () => {
     if (!origin || !destination) return;
   
@@ -433,9 +584,48 @@ const AmbulanceDashboard: React.FC = () => {
     setShowConfirmModal(false); // Cerrar el modal de confirmación si el usuario cancela
   };
 
+const getBrowserLocation = async (): Promise<{ lat: number; lng: number } | null> => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      console.error("Geolocalización no es compatible con este navegador.");
+      return resolve(null);
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        console.log("Ubicación obtenida del navegador:", { latitude, longitude, accuracy });
+        resolve({ lat: latitude, lng: longitude });
+      },
+      (error) => {
+        console.error("Error obteniendo ubicación del navegador:", error);
+        resolve(null);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+};
+
+const handleRefresh = async () => {
+  console.log("Obteniendo ubicación con el navegador (alta precisión)...");
+
+  const newOrigin = await getBrowserLocation();
+
+  if (newOrigin) {
+    setOrigin(newOrigin);
+    console.log("Nuevo origen seteado:", newOrigin);
+
+    if (lastRouteAction === "hospital") {
+      getRouteToHospital(closestHospital);
+    } else if (lastRouteAction === "accidente") {
+      getRoute();
+    }
+  } else {
+    console.warn("No se pudo obtener una ubicación válida.");
+  }
+};
+
   
-
-
   return (
     <>
     
@@ -481,7 +671,8 @@ const AmbulanceDashboard: React.FC = () => {
       <Modal.Title>Ruta Finalizada</Modal.Title>
     </Modal.Header>
     <Modal.Body>
-      <p>El servicio ha sido completado satisfactoriamente.</p>
+      <p>El servicio ha sido completado satisfactoriamente. <br />Le invitamos a completar la encuesta en: <a href="https://forms.gle/Q84yDim5VxnCzrnv8" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">https://forms.gle/Q84yDim5VxnCzrnv8
+  </a>. Su participación es valiosa para mejorar el sistema.</p>
     </Modal.Body>
     <Modal.Footer>
       <Button variant="danger" onClick={() => setEndRouteShowModal(false)}>
@@ -502,15 +693,36 @@ const AmbulanceDashboard: React.FC = () => {
               Limpiar destino actual
             </button>
             <button
+            className={`${getButtonStyle()} text-white p-3 ml-2 rounded-lg`}
+            onClick={handleToggleStatus}
+            disabled={status === "in_use" || loading}
+          >
+            {loading ? "Cargando..." : getButtonText()}
+          </button>
+            <button
               className="bg-green-500 text-white p-3 ml-2 rounded-lg"
-              onClick={findClosestHospital}
+              onClick={() => {
+              setLastRouteAction("hospital");
+              findClosestHospital()
+              }}
+              
               disabled={!origin}
             >
               Redireccion al hospital
             </button>
             <button
               className={`bg-blue-500 text-white p-3 ml-2 rounded-lg ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={handleStartRoute}
+              onClick={destination ? handleDetailsClick : selectedAccident}
+              disabled={!destination}
+            >
+              Detalles del accidente
+            </button>
+            <button
+              className={`bg-blue-500 text-white p-3 ml-2 rounded-lg ${!destination ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={ () => {
+              setLastRouteAction("accidente");
+              handleStartRoute();
+              }}
               disabled={!destination}
             >
               Enrutar al accidente
@@ -521,6 +733,13 @@ const AmbulanceDashboard: React.FC = () => {
               disabled={!destination}
             >
               Ruta finalizada
+            </button>
+            <button
+              className={`bg-red-500 text-white p-3 ml-2 rounded-lg ${!lastRouteAction ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={handleRefresh}
+              disabled={!lastRouteAction}
+            >
+              Actualizar mapa
             </button>
           </div>
           {estimatedTime && <p>Tiempo estimado de llegada: {estimatedTime}</p>}
@@ -535,12 +754,15 @@ const AmbulanceDashboard: React.FC = () => {
           >
             {/* Verificar si google.maps.geometry.encoding está disponible */}
          
-            {origin && <Marker position={origin} />}
-            {destination && <Marker position={destination} />}
+            {origin && <Marker position={origin} icon={originIcon} />}
+            {console.log("este es el destino", destination)}
+            {destination && <Marker position={destination} icon={destinationIcon} />}
+            {closestHospital && <Marker position={closestHospital} icon={hospitalIcon} />}
+
             {route && route.polyline && route.polyline.encodedPolyline && (
               <>
-                {console.log("Polyline codificada:", route.polyline.encodedPolyline)}
-                {console.log("Polyline decodificada:", google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline))}
+                {/*{console.log("Polyline codificada:", route.polyline.encodedPolyline)}
+                {console.log("Polyline decodificada:", google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline))}*/}
                
 
                 <Polyline
