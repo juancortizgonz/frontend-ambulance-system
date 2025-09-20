@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
 
 import "react-datepicker/dist/react-datepicker.css";
+import { analyzeWithGemini } from "@/api/gemini";
 
 const CreateReport = () => {
     const geocodingClientKey = import.meta.env.VITE_MAPBOX_GEOCODING;
@@ -13,6 +14,14 @@ const CreateReport = () => {
     const [direction, setDirection] = useState<string>("")
     const [latitude, setLatitude] = useState<number>(0)
     const [longitude, setLongitude] = useState<number>(0)
+    const [description, setDescription] = useState<string>("");
+    const [aiAnalysis, setAiAnalysis] = useState<{
+        gravedad: string;
+        recomendaciones: string;
+        instrucciones_operador: string;
+    } | null>(null);
+    const [loadingAI, setLoadingAI] = useState(false);
+
 
     const resetFields = () => {
         setIsActive(true)
@@ -79,28 +88,28 @@ const CreateReport = () => {
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-      ) => {
+    ) => {
         setDirection(e.target.value)
-      };
+    };
 
     const geocodingClient = mbxGeocoding({
         accessToken:
-          geocodingClientKey,
-      })
-    
-      interface Coordinates {
+            geocodingClientKey,
+    })
+
+    interface Coordinates {
         latitude: number
         longitude: number
-      }
-    
-      const getCoordinatesFromAddress = async (address: string): Promise<Coordinates | null> => {
+    }
+
+    const getCoordinatesFromAddress = async (address: string): Promise<Coordinates | null> => {
         const response = await geocodingClient
-          .forwardGeocode({
-            query: address,
-            limit: 1,
-          })
-          .send()
-    
+            .forwardGeocode({
+                query: address,
+                limit: 1,
+            })
+            .send()
+
         const match = response.body.features[0]
         const latitude = match?.center[1]
         const longitude = match?.center[0]
@@ -108,13 +117,13 @@ const CreateReport = () => {
         setLongitude(longitude)
 
         if (match) {
-          return {
-            latitude: match.center[1],
-            longitude: match.center[0],
-          }
+            return {
+                latitude: match.center[1],
+                longitude: match.center[0],
+            }
         }
         return null
-      }
+    }
 
     return (
         <BaseLayout>
@@ -125,25 +134,26 @@ const CreateReport = () => {
                         <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
                             <div className="sm:col-span-2">
                                 <label htmlFor="direction" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Dirección</label>
-                                <input 
+                                <input
                                     onChange={async (e) => {
                                         handleChange(e);
                                         const coords = await getCoordinatesFromAddress(
-                                        e.target.value
+                                            e.target.value
                                         )
                                         if (coords) {
                                             const latitudeInput = document.getElementById("latitude") as HTMLInputElement
                                             const longitudeInput = document.getElementById("longitude") as HTMLInputElement
                                             latitudeInput.value = coords.latitude.toString()
                                             longitudeInput.value = coords.longitude.toString()
-                                        }}}
-                                        type="text" 
-                                        name="direction" 
-                                        id="direction" 
-                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" 
-                                        placeholder="Ingresa la dirección del incidente" 
-                                        required
-                                    />
+                                        }
+                                    }}
+                                    type="text"
+                                    name="direction"
+                                    id="direction"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                    placeholder="Ingresa la dirección del incidente"
+                                    required
+                                />
                             </div>
                             <div className="w-full">
                                 <label htmlFor="latitude" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Latitud</label>
@@ -155,7 +165,7 @@ const CreateReport = () => {
                             </div>
                             <div className="w-full">
                                 <label htmlFor="callernumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Teléfono de quién informa</label>
-                                <input  type="tel" name="callernumber" id="callernumber" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingrese un punto de referencia (si aplica)" />
+                                <input type="tel" name="callernumber" id="callernumber" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingrese un punto de referencia (si aplica)" />
                             </div>
                             <div className="w-full">
                                 <label htmlFor="status" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Estado del incidente</label>
@@ -198,7 +208,40 @@ const CreateReport = () => {
                             </div>
                             <div className="sm:col-span-2">
                                 <label htmlFor="description" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Descripción del incidente</label>
-                                <textarea name="description" id="description" rows={8} className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresa los detalles importantes del incidente"></textarea>
+                                <textarea
+                                    name="description"
+                                    id="description"
+                                    rows={8}
+                                    className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                                    placeholder="Ingresa los detalles importantes del incidente"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                ></textarea>
+                                <button
+                                    type="button"
+                                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                    disabled={!description || loadingAI}
+                                    onClick={async () => {
+                                        setLoadingAI(true);
+                                        const analysis = await analyzeWithGemini(description);
+                                        setAiAnalysis(analysis);
+                                        setLoadingAI(false);
+                                    }}
+                                >
+                                    {loadingAI ? "Analizando..." : "Analizar descripción"}
+                                </button>
+
+
+                                {aiAnalysis && (
+                                    <div className="mt-4 p-4 bg-gray-100 rounded-lg text-sm text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                                        <p><strong>Gravedad sugerida:</strong> {aiAnalysis.gravedad}</p>
+                                        <p><strong>Recomendaciones:</strong> {aiAnalysis.recomendaciones}</p>
+                                        <p><strong>Instrucciones para el operador:</strong> {aiAnalysis.instrucciones_operador}</p>
+                                    </div>
+                                )}
+
+
+
                             </div>
                             <div className="sm:col-span-2">
                                 <label htmlFor="notes" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Notas adicionales</label>
