@@ -2,6 +2,7 @@ import BaseLayout from "@/layouts/BaseLayout"
 import api from "@/api/api"
 import React, { useState } from "react"
 import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
+import { useToast } from "@/components/ui/ToastProvider";
 
 import "react-datepicker/dist/react-datepicker.css";
 import { analyzeWithGemini } from "@/api/gemini";
@@ -9,6 +10,8 @@ import Map from "@/components/dashboard/admin/Map";
 
 const CreateReport = () => {
     const geocodingClientKey = import.meta.env.VITE_MAPBOX_GEOCODING;
+
+    const { pushToast } = useToast();
 
     const [isActive, setIsActive] = useState<boolean>(true)
     const [isResolved, setIsResolved] = useState<boolean>(false)
@@ -70,12 +73,22 @@ const CreateReport = () => {
                 throw new Error("Error al crear el reporte")
             }
 
-            alert("Reporte creado exitosamente")
+            pushToast({
+                title: "Reporte de accidente/incidente creado",
+                message: "Reporte creado exitosamente en el sistema",
+                type: "success",
+                duration: 5000,
+            });
 
             resetFields()
         } catch (error) {
             console.error("Error al enviar el formulario:", error);
-            alert("Ocurrió un error al enviar el formulario. Por favor, inténtalo de nuevo más tarde.");
+            pushToast({
+                title: "Error al crear el reporte",
+                message: "Ocurrió un error al enviar el formulario. Por favor, inténtalo de nuevo más tarde.",
+                type: "error",
+                duration: 5000,
+            });
         }
     }
 

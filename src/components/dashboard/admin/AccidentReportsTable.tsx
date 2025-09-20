@@ -17,6 +17,7 @@ import { ChevronDown, ChevronUp, Edit, Trash2, Ambulance, X, Check, Clock, MapPi
 import { AccidentReport } from "@/types/types"
 import api from "@/api/api"
 import type { AmbulanceInfo } from "@/types/types";
+import { useToast } from "@/components/ui/ToastProvider"
 
 const columnHelper = createColumnHelper<AccidentReport>()
 
@@ -50,6 +51,8 @@ function Modal({
 }
 
 export default function AccidentReportsTable({ data }: { data: AccidentReport[] }) {
+  const { pushToast } = useToast();
+
   const [sorting, setSorting] = useState<SortingState>([])
   const [selectedReport, setSelectedReport] = useState<AccidentReport | null>(null)
 
@@ -209,7 +212,12 @@ export default function AccidentReportsTable({ data }: { data: AccidentReport[] 
         return;
       }
 
-      alert("Reporte de accidente finalizado correctamente.");
+      pushToast({
+        title: "Reporte finalizado correctamente",
+        message: "Reporte finalizado exitosamente en el sistema",
+        type: "success",
+        duration: 5000,
+      });
       setIsAmbulanceModalOpen(false);
       setSelectedReport(null);
       setEditForm(null);

@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router";
+import { useToast } from "./ui/ToastProvider";
 
 export function LoginForm({
   className,
   ...props
 }: Readonly<React.ComponentPropsWithoutRef<"form">>) {
   const { setAuthInfo } = useAuth();
+  const { pushToast } = useToast();
 
   let navigate = useNavigate();
 
@@ -77,8 +79,13 @@ export function LoginForm({
             href="#"
             className="ml-auto text-sm underline-offset-4 hover:underline text-red-600"
             onClick={(e) => {
-              e.preventDefault(); // Evita la navegación
-              alert("Password reset functionality not implemented yet");
+              e.preventDefault();
+              pushToast({
+                title: "Restablecer contraseña (no funcional)",
+                message: "Instrucciones para restablecer la contraseña enviadas a tu correo electrónico.",
+                type: "info",
+                duration: 5000,
+              });
             }}
           >
             ¿Olvidaste tu contraseña?
