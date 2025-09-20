@@ -5,6 +5,7 @@ import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
 
 import "react-datepicker/dist/react-datepicker.css";
 import { analyzeWithGemini } from "@/api/gemini";
+import Map from "@/components/dashboard/admin/Map";
 
 const CreateReport = () => {
     const geocodingClientKey = import.meta.env.VITE_MAPBOX_GEOCODING;
@@ -248,6 +249,24 @@ const CreateReport = () => {
                                 <textarea name="notes" id="notes" rows={8} className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresa los detalles adicionales que pueden ser útiles"></textarea>
                             </div>
                         </div>
+                        <div className="w-full mt-8">
+                                <Map
+                                    latitude={latitude || 3.4516}
+                                    longitude={longitude || -76.5320}
+                                    onLocationChange={(lat, lng) => {
+                                        setLatitude(lat);
+                                        setLongitude(lng);
+
+                                        const latitudeInput = document.getElementById("latitude") as HTMLInputElement;
+                                        const longitudeInput = document.getElementById("longitude") as HTMLInputElement;
+                                        if (latitudeInput && longitudeInput) {
+                                            latitudeInput.value = lat.toString();
+                                            longitudeInput.value = lng.toString();
+                                        }
+                                    }}
+                                />
+
+                            </div>
                         <button type="submit" className="inline-flex items-center px-5 py-2.5 mt-4 sm:mt-6 text-sm font-medium text-center text-white bg-primary-700 rounded-lg focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 hover:bg-primary-800 bg-red-700">
                             Agregar incidente
                         </button>
