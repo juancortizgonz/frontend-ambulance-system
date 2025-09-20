@@ -584,14 +584,47 @@ const getButtonText = () => {
     setShowConfirmModal(false); // Cerrar el modal de confirmación si el usuario cancela
   };
 
-  
-  const handleRefresh = () => {
+const getBrowserLocation = async (): Promise<{ lat: number; lng: number } | null> => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      console.error("Geolocalización no es compatible con este navegador.");
+      return resolve(null);
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        console.log("Ubicación obtenida del navegador:", { latitude, longitude, accuracy });
+        resolve({ lat: latitude, lng: longitude });
+      },
+      (error) => {
+        console.error("Error obteniendo ubicación del navegador:", error);
+        resolve(null);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+};
+
+const handleRefresh = async () => {
+  console.log("Obteniendo ubicación con el navegador (alta precisión)...");
+
+  const newOrigin = await getBrowserLocation();
+
+  if (newOrigin) {
+    setOrigin(newOrigin);
+    console.log("Nuevo origen seteado:", newOrigin);
+
     if (lastRouteAction === "hospital") {
       getRouteToHospital(closestHospital);
     } else if (lastRouteAction === "accidente") {
       getRoute();
     }
-  };
+  } else {
+    console.warn("No se pudo obtener una ubicación válida.");
+  }
+};
+
   
   return (
     <>
@@ -728,8 +761,8 @@ const getButtonText = () => {
 
             {route && route.polyline && route.polyline.encodedPolyline && (
               <>
-                {console.log("Polyline codificada:", route.polyline.encodedPolyline)}
-                {console.log("Polyline decodificada:", google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline))}
+                {/*{console.log("Polyline codificada:", route.polyline.encodedPolyline)}
+                {console.log("Polyline decodificada:", google.maps.geometry.encoding.decodePath(route.polyline.encodedPolyline))}*/}
                
 
                 <Polyline
