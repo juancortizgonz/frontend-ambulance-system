@@ -8,6 +8,7 @@ import AccidentReportHistory from "./pages/AccidentReportHistory"
 import { AuthProvider } from './context/AuthContext.js';
 import CreateReport from './pages/create/CreateReport.js';
 import HospitalList from './components/dashboard/admin/HospitalList.js';
+import AmbulanceList from './components/dashboard/admin/AmbulanceList.js';
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
@@ -21,6 +22,7 @@ if (rootElement) {
             <Route path="history" element={<AccidentReportHistory />} />
             <Route path="create-report" element={<CreateReport />} />
             <Route path="hospital-list" element={<HospitalList />} />
+            <Route path="ambulance-list" element={<AmbulanceList />} />
           </Routes>
         </AuthProvider>
     </BrowserRouter>,

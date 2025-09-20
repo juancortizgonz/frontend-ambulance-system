@@ -20,6 +20,7 @@ const HospitalList = () => {
 
     return (
         <BaseLayout>
+            <h1 className="text-2xl font-bold mb-4">Lista de Hospitales</h1>
             {hospitals.map((hospital: any) => (
                 <div key={hospital.id} className="p-4 border-b">
                     <h2 className="text-xl font-bold">Nombre: {hospital.name}</h2>
