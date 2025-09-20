@@ -7,6 +7,7 @@ import FAQ from './pages/FAQ.jsx';
 import AccidentReportHistory from "./pages/AccidentReportHistory"
 import { AuthProvider } from './context/AuthContext.js';
 import CreateReport from './pages/create/CreateReport.js';
+import HospitalList from './components/dashboard/admin/HospitalList.js';
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
@@ -19,6 +20,7 @@ if (rootElement) {
             <Route path="faq" element={<FAQ />} />
             <Route path="history" element={<AccidentReportHistory />} />
             <Route path="create-report" element={<CreateReport />} />
+            <Route path="hospital-list" element={<HospitalList />} />
           </Routes>
         </AuthProvider>
     </BrowserRouter>,
