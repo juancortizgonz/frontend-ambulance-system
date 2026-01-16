@@ -8,9 +8,11 @@ import { MdContactSupport } from "react-icons/md"
 import { PiAmbulanceDuotone } from "react-icons/pi"
 import { IoMdAddCircle } from "react-icons/io";
 import { useAuth } from "@/hooks/useAuth"
+import SupportModal from "@/components/modals/SupportModal";
 
 const BaseLayout = ({ children }: { children: ReactNode }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isSupportOpen, setIsSupportOpen] = useState(false);
 
     const { clearAuthInfo } = useAuth()
 
@@ -91,7 +93,14 @@ const BaseLayout = ({ children }: { children: ReactNode }) => {
                     </ul>
                     <ul className="pt-5 mt-5 space-y-2 border-t border-gray-200 dark:border-gray-700">
                         <li>
-                            <a href="#" className="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg transition duration-75 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white group">
+                            <a 
+                                href="#" 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setIsSupportOpen(true);
+                                }}
+                                className="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg transition duration-75 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white group"
+                            >
                                 <MdContactSupport />
                                 <span className="ml-3">Soporte</span>
                             </a>
@@ -109,6 +118,8 @@ const BaseLayout = ({ children }: { children: ReactNode }) => {
                     EISC | Universidad del Valle
                 </p>
             </footer>
+
+            <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
         </>
     )
 }
