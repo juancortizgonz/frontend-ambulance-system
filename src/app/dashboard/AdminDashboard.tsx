@@ -13,6 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import api from "@/api/api";
 import { AccidentReport } from "@/types/types";
 import BaseLayout from "@/layouts/BaseLayout";
+import { startDashboardTour } from "@/utils/tour";
 
 // Iconos SVG inline
 const MapPinIcon = () => (
@@ -262,6 +263,9 @@ const AdminDashboard: React.FC = () => {
     }
 
     fetchAccidentReports();
+    
+    // Start the tour
+    startDashboardTour();
   }, []);
 
   return (
@@ -269,6 +273,7 @@ const AdminDashboard: React.FC = () => {
       <div className="p-4">
         <div className="container flex justify-center gap-x-2">
           <a
+            id="btn-create-report"
             href="/create-report"
             className="flex items-center justify-center p-4 bg-orange-500 text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-opacity-50 transition duration-300 ease-in-out font-semibold rounded-sm"
             tabIndex={0}
@@ -277,6 +282,7 @@ const AdminDashboard: React.FC = () => {
             Generar nuevo reporte
           </a>
           <NavLink
+            id="btn-view-history"
             to="/history"
             className="flex items-center justify-center p-4 bg-green-600 font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-300 ease-in-out rounded-sm">
             <FiList className="mr-2" size={24} />

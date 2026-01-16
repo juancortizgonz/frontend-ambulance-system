@@ -45,7 +45,7 @@ const BaseLayout = ({ children }: { children: ReactNode }) => {
             </header>
 
             <aside
-                id="default-sidebar"
+                id="app-sidebar"
                 className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     } sm:translate-x-0`}
                 aria-label="Sidenav"
