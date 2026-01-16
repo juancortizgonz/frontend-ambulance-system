@@ -3,9 +3,10 @@ import api from "@/api/api"
 import React, { useState } from "react"
 import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
 import { useToast } from "@/components/ui/ToastProvider";
+import { AlertTriangle, Info, ShieldAlert, Phone } from "lucide-react";
 
 import "react-datepicker/dist/react-datepicker.css";
-import { analyzeWithGemini } from "@/api/gemini";
+import { analyzeWithGemini, AIAnalysisResult } from "@/api/gemini";
 import Map from "@/components/dashboard/admin/Map";
 
 const CreateReport = () => {
@@ -19,11 +20,7 @@ const CreateReport = () => {
     const [latitude, setLatitude] = useState<number>(0)
     const [longitude, setLongitude] = useState<number>(0)
     const [description, setDescription] = useState<string>("");
-    const [aiAnalysis, setAiAnalysis] = useState<{
-        gravedad: string;
-        recomendaciones: string;
-        instrucciones_operador: string;
-    } | null>(null);
+    const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
     const [loadingAI, setLoadingAI] = useState(false);
 
 
@@ -247,10 +244,61 @@ const CreateReport = () => {
 
 
                                 {aiAnalysis && (
-                                    <div className="mt-4 p-4 bg-gray-100 rounded-lg text-sm text-gray-800 dark:bg-gray-800 dark:text-gray-200">
-                                        <p><strong>Gravedad sugerida:</strong> {aiAnalysis.gravedad}</p>
-                                        <p><strong>Recomendaciones:</strong> {aiAnalysis.recomendaciones}</p>
-                                        <p><strong>Instrucciones para el operador:</strong> {aiAnalysis.instrucciones_operador}</p>
+                                    <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        {/* Severity Card */}
+                                        <div className={`p-4 rounded-lg border-l-4 flex items-start gap-3 shadow-sm ${
+                                            aiAnalysis.severity === 'UCI' 
+                                            ? 'bg-red-50 border-red-500 text-red-800' 
+                                            : 'bg-yellow-50 border-yellow-500 text-yellow-800'
+                                        }`}>
+                                            {aiAnalysis.severity === 'UCI' ? (
+                                                <AlertTriangle className="h-6 w-6 flex-shrink-0 text-red-600" />
+                                            ) : (
+                                                <Info className="h-6 w-6 flex-shrink-0 text-yellow-600" />
+                                            )}
+                                            <div>
+                                                <h4 className="font-bold text-lg flex items-center">
+                                                    {aiAnalysis.severity === 'UCI' ? 'Alta Gravedad / Emergencia' : 'Gravedad Moderada / Básica'}
+                                                </h4>
+                                                <p className="text-sm mt-1 opacity-90 font-medium">{aiAnalysis.severity_reason}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            {/* Recommendations */}
+                                            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+                                                <h5 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                                                    <ShieldAlert className="h-4 w-4 text-blue-500" />
+                                                    Recomendaciones de Seguridad
+                                                </h5>
+                                                <ul className="space-y-2">
+                                                    {aiAnalysis.recommendations.map((rec, idx) => (
+                                                        <li key={idx} className="text-sm text-gray-600 dark:text-gray-300 flex items-start gap-2">
+                                                            <span className="text-blue-400 mt-0.5">•</span>
+                                                            {rec}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+
+                                            {/* Operator Instructions */}
+                                            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+                                                <h5 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                                                    <Phone className="h-4 w-4 text-green-500" />
+                                                    Guía para el Operador
+                                                </h5>
+                                                <ol className="space-y-2">
+                                                    {aiAnalysis.operator_instructions.map((inst, idx) => (
+                                                        <li key={idx} className="text-sm text-gray-600 dark:text-gray-300 flex items-start gap-2">
+                                                            <span className="bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                                                                {idx + 1}
+                                                            </span>
+                                                            {inst}
+                                                        </li>
+                                                    ))}
+                                                </ol>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
