@@ -46,9 +46,10 @@ interface Props {
   ambulances: Ambulance[];
   hospitals: Hospital[];
   accidents: Accident[];
+  centerCoordinates?: { lat: number; lng: number } | null;
 }
 
-const AdminMap: React.FC<Props> = ({ ambulances, hospitals, accidents }) => {
+const AdminMap: React.FC<Props> = ({ ambulances, hospitals, accidents, centerCoordinates }) => {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -151,16 +152,28 @@ const AdminMap: React.FC<Props> = ({ ambulances, hospitals, accidents }) => {
         markersRef.current.push(marker);
       });
 
-    if (ambulances.length + hospitals.length + accidents.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
-      ambulances.forEach((a) => bounds.extend([a.longitude, a.latitude]));
-      hospitals.forEach((h) => bounds.extend([h.longitude, h.latitude]));
-      accidents
-        .filter((a) => a.is_active)
-        .forEach((acc) => bounds.extend([acc.longitude, acc.latitude]));
-      mapInstance.current.fitBounds(bounds, { padding: 50 });
+      if (
+        !centerCoordinates &&
+        (ambulances.length + hospitals.length + accidents.length > 0)
+      ) {
+        const bounds = new mapboxgl.LngLatBounds();
+        ambulances.forEach((a) => bounds.extend([a.longitude, a.latitude]));
+        hospitals.forEach((h) => bounds.extend([h.longitude, h.latitude]));
+        accidents
+          .filter((a) => a.is_active)
+          .forEach((acc) => bounds.extend([acc.longitude, acc.latitude]));
+        mapInstance.current.fitBounds(bounds, { padding: 50 });
+      }
+  }, [ambulances, hospitals, accidents, centerCoordinates]);
+
+  useEffect(() => {
+    if (mapInstance.current && centerCoordinates) {
+      mapInstance.current.flyTo({
+        center: [centerCoordinates.lng, centerCoordinates.lat],
+        zoom: 15,
+      });
     }
-  }, [ambulances, hospitals, accidents]);
+  }, [centerCoordinates]);
 
   return (
     <div style={{ width: "100%", height: "600px", position: "relative" }}>
