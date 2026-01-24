@@ -12,6 +12,7 @@ interface MapProps {
 const Map: React.FC<MapProps> = ({ latitude, longitude, onLocationChange }) => {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<mapboxgl.Map | null>(null);
+  const markerInstance = useRef<mapboxgl.Marker | null>(null);
 
   useEffect(() => {
     if (mapContainer.current && !mapInstance.current) {
@@ -22,18 +23,25 @@ const Map: React.FC<MapProps> = ({ latitude, longitude, onLocationChange }) => {
         zoom: 14,
       });
 
-      const marker = new mapboxgl.Marker({ draggable: true })
+      markerInstance.current = new mapboxgl.Marker({ draggable: true })
         .setLngLat([longitude, latitude])
         .addTo(mapInstance.current);
 
-      marker.on("dragend", () => {
-        const lngLat = marker.getLngLat();
+      markerInstance.current.on("dragend", () => {
+        const lngLat = markerInstance.current!.getLngLat();
         if (onLocationChange) {
           onLocationChange(lngLat.lat, lngLat.lng);
         }
       });
     }
   }, [latitude, longitude, onLocationChange]);
+
+  useEffect(() => {
+    if (mapInstance.current && markerInstance.current) {
+        mapInstance.current.setCenter([longitude, latitude]);
+        markerInstance.current.setLngLat([longitude, latitude]);
+    }
+  }, [latitude, longitude]);
 
   return (
     <div
