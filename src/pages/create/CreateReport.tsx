@@ -3,7 +3,7 @@ import api from "@/api/api"
 import React, { useEffect, useState } from "react"
 import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
 import { useToast } from "@/components/ui/ToastProvider";
-import { AlertTriangle, Info, ShieldAlert, Phone, Stethoscope } from "lucide-react";
+import { AlertTriangle, Info, ShieldAlert, Phone, Stethoscope, Car, Building, Landmark, Mountain, ShieldCheck, Siren } from "lucide-react";
 
 import "react-datepicker/dist/react-datepicker.css";
 import { analyzeWithGemini, AIAnalysisResult } from "@/api/gemini";
@@ -19,6 +19,8 @@ const CreateReport = () => {
     const [direction, setDirection] = useState<string>("")
     const [latitude, setLatitude] = useState<number>(0)
     const [longitude, setLongitude] = useState<number>(0)
+    const [typePlace, setTypePlace] = useState<string | null>(null);
+    const [severity, setSeverity] = useState<string | null>(null);
     const [description, setDescription] = useState<string>("");
     const [additionalNotes, setAdditionalNotes] = useState<string>("");
     const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
@@ -40,6 +42,8 @@ const CreateReport = () => {
         setLatitude(0)
         setLongitude(0)
         setAdditionalNotes("")
+        setTypePlace(null)
+        setSeverity(null)
 
         const form = document.querySelector("form") as HTMLFormElement
         if (form) {
@@ -66,8 +70,8 @@ const CreateReport = () => {
             is_active: isActive,
             is_resolved: isResolved,
             reference_point: formData.get("referencepoint") as string,
-            type_place: formData.get("typeplace"),
-            severity: formData.get("severity") as string,
+            type_place: typePlace,
+            severity: severity,
             people_involved: parseInt(formData.get("peopleinvolved") as string, 10),
             description: formData.get("description") as string,
             additional_notes: additionalNotes,
@@ -146,6 +150,18 @@ const CreateReport = () => {
         return null
     }
 
+    const placeOptions = [
+        { value: "1", label: "Carretera", icon: <Car className="w-5 h-5 mr-2" /> },
+        { value: "2", label: "Edificio", icon: <Building className="w-5 h-5 mr-2" /> },
+        { value: "3", label: "Institución", icon: <Landmark className="w-5 h-5 mr-2" /> },
+        { value: "4", label: "Zona Rural", icon: <Mountain className="w-5 h-5 mr-2" /> },
+    ];
+
+    const severityOptions = [
+        { value: "BASIC", label: "Básica", icon: <ShieldCheck className="w-5 h-5 mr-2" /> },
+        { value: "UCI", label: "Emergencia", icon: <Siren className="w-5 h-5 mr-2" /> },
+    ];
+
     return (
         <BaseLayout>
             <section className="bg-white dark:bg-gray-900">
@@ -176,13 +192,21 @@ const CreateReport = () => {
                                     required
                                 />
                             </div>
-                            <div className="w-full">
+                            <div className="w-full relative group">
                                 <label htmlFor="latitude" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Latitud</label>
                                 <input type="number" name="latitude" id="latitude" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Latitud registrada" disabled />
+                                <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+8px)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none z-10 whitespace-nowrap">
+                                    Estos campos se autocompletan al ingresar la dirección.
+                                </div>
+                                <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+4px)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-3 h-3 bg-gray-800 rotate-45 pointer-events-none z-10"></div>
                             </div>
-                            <div className="w-full">
+                            <div className="w-full relative group">
                                 <label htmlFor="longitude" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Longitud</label>
                                 <input type="number" name="longitude" id="longitude" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Longitud registrada" disabled />
+                                <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+8px)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none z-10 whitespace-nowrap">
+                                    Estos campos se autocompletan al ingresar la dirección.
+                                </div>
+                                <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+4px)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-3 h-3 bg-gray-800 rotate-45 pointer-events-none z-10"></div>
                             </div>
                             <div className="w-full">
                                 <label htmlFor="callernumber" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Teléfono de quién informa</label>
@@ -207,21 +231,41 @@ const CreateReport = () => {
                             </div>
                             <div className="w-full">
                                 <label htmlFor="typeplace" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tipo de lugar</label>
-                                <select name="typeplace" id="typeplace" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                    <option>Seleccione un tipo de lugar</option>
-                                    <option value={1}>Carretera pública</option>
-                                    <option value={2}>Edificio</option>
-                                    <option value={3}>Institución pública</option>
-                                    <option value={4}>Zona rural</option>
-                                </select>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {placeOptions.map((option) => (
+                                        <button
+                                            type="button"
+                                            key={option.value}
+                                            onClick={() => setTypePlace(option.value)}
+                                            className={`flex items-center justify-center p-2.5 text-sm font-medium rounded-lg border ${typePlace === option.value
+                                                    ? "bg-blue-600 border-blue-600 text-white"
+                                                    : "bg-gray-50 border-gray-300 text-gray-900 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                                                }`}
+                                        >
+                                            {option.icon}
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             <div>
                                 <label htmlFor="severity" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Gravedad</label>
-                                <select name="severity" id="severity" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                    <option>Seleccione la gravedad del incidente</option>
-                                    <option value="BASIC">Gravedad baja/moderada</option>
-                                    <option value="UCI">Gravedad alta/Emergencia</option>
-                                </select>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {severityOptions.map((option) => (
+                                        <button
+                                            type="button"
+                                            key={option.value}
+                                            onClick={() => setSeverity(option.value)}
+                                            className={`flex items-center justify-center p-2.5 text-sm font-medium rounded-lg border ${severity === option.value
+                                                    ? "bg-red-600 border-red-600 text-white"
+                                                    : "bg-gray-50 border-gray-300 text-gray-900 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                                                }`}
+                                        >
+                                            {option.icon}
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             <div>
                                 <label htmlFor="peopleinvolved" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cantidad de personas involucradas</label>
