@@ -7,12 +7,14 @@ import { FaAmbulance } from "react-icons/fa"
 import { MdContactSupport } from "react-icons/md"
 import { PiAmbulanceDuotone } from "react-icons/pi"
 import { IoMdAddCircle } from "react-icons/io";
+import { UserCircle, LogOut } from 'lucide-react';
 import { useAuth } from "@/hooks/useAuth"
 import SupportModal from "@/components/modals/SupportModal";
 
 const BaseLayout = ({ children }: { children: ReactNode }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isSupportOpen, setIsSupportOpen] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     const { clearAuthInfo } = useAuth()
 
@@ -28,27 +30,48 @@ const BaseLayout = ({ children }: { children: ReactNode }) => {
                 />
             )}
 
-            <header className="antialiased sm:ml-64 px-4 py-6">
-                <nav className="flex justify-between bg-white border-gray-200 px-4 lg:px-6 py-2.5 dark:bg-gray-800">
+            <header className="fixed top-0 left-0 right-0 z-20">
+                <nav className="bg-white border-b border-gray-200 px-4 lg:px-6 py-2.5 dark:bg-gray-800">
                     <div className="flex flex-wrap justify-between items-center">
                         <div className="flex justify-start items-center">
-                            <button onClick={openMenu} aria-expanded="true" aria-controls="sidebar" className="p-2 mr-2 text-gray-600 rounded-lg cursor-pointer lg:hidden hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-100 dark:focus:bg-gray-700 focus:ring-2 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                                <svg className="w-[18px] h-[18px]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 1h15M1 7h15M1 13h15" /></svg>
+                            <button onClick={openMenu} aria-expanded={sidebarOpen} aria-controls="app-sidebar" className="p-2 mr-2 text-gray-600 rounded-lg cursor-pointer lg:hidden hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-100 dark:focus:bg-gray-700 focus:ring-2 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                                <svg className="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path clipRule="evenodd" fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
+                                </svg>
                                 <span className="sr-only">Toggle sidebar</span>
                             </button>
                             <a href="/" className="flex mr-4 items-center gap-2">
-                                <PiAmbulanceDuotone />
-                                <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">S.G.A.</span>
+                                <PiAmbulanceDuotone size={32} className="text-blue-600" />
+                                <span className="self-center text-2xl font-bold whitespace-nowrap dark:text-white">S.G.A.</span>
                             </a>
                         </div>
+                        <div className="relative">
+                            <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none">
+                                <UserCircle className="w-8 h-8 text-gray-600" />
+                                <span className="hidden sm:inline font-medium">{useAuth().role}</span>
+                            </button>
+                            {isUserMenuOpen && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                                    <button
+                                        onClick={() => {
+                                            clearAuthInfo();
+                                            setIsUserMenuOpen(false);
+                                        }}
+                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        <LogOut className="w-4 h-4 mr-2" />
+                                        Cerrar sesión
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <button className='bg-red-500 py-2 px-3 text-white rounded-sm font-semibold hover:bg-red-700 transition-all' onClick={clearAuthInfo}>Cerrar sesión</button>
                 </nav>
             </header>
 
             <aside
                 id="app-sidebar"
-                className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                className={`fixed top-0 left-0 z-40 w-64 h-screen pt-16 transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     } sm:translate-x-0`}
                 aria-label="Sidenav"
             >
@@ -109,7 +132,7 @@ const BaseLayout = ({ children }: { children: ReactNode }) => {
                 </div>
             </aside>
 
-            <main className='sm:ml-64 px-4 py-6 min-h-screen'>
+            <main className='p-4 sm:ml-64 pt-20 min-h-screen'>
                 {children}
             </main>
 
