@@ -1,9 +1,9 @@
 import BaseLayout from "@/layouts/BaseLayout"
 import api from "@/api/api"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
 import { useToast } from "@/components/ui/ToastProvider";
-import { AlertTriangle, Info, ShieldAlert, Phone } from "lucide-react";
+import { AlertTriangle, Info, ShieldAlert, Phone, Stethoscope } from "lucide-react";
 
 import "react-datepicker/dist/react-datepicker.css";
 import { analyzeWithGemini, AIAnalysisResult } from "@/api/gemini";
@@ -20,8 +20,17 @@ const CreateReport = () => {
     const [latitude, setLatitude] = useState<number>(0)
     const [longitude, setLongitude] = useState<number>(0)
     const [description, setDescription] = useState<string>("");
+    const [additionalNotes, setAdditionalNotes] = useState<string>("");
     const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
     const [loadingAI, setLoadingAI] = useState(false);
+
+    useEffect(() => {
+        if (aiAnalysis?.paramedic_recommendations) {
+            const recommendationsText = aiAnalysis.paramedic_recommendations.join("\n- ");
+            const fullText = `**Recomendaciones para Paramédicos (generado por IA):**\n- ${recommendationsText}`;
+            setAdditionalNotes(prev => prev ? `${prev}\n\n${fullText}` : fullText);
+        }
+    }, [aiAnalysis]);
 
 
     const resetFields = () => {
@@ -30,6 +39,7 @@ const CreateReport = () => {
         setDirection("")
         setLatitude(0)
         setLongitude(0)
+        setAdditionalNotes("")
 
         const form = document.querySelector("form") as HTMLFormElement
         if (form) {
@@ -60,7 +70,7 @@ const CreateReport = () => {
             severity: formData.get("severity") as string,
             people_involved: parseInt(formData.get("peopleinvolved") as string, 10),
             description: formData.get("description") as string,
-            additional_notes: formData.get("notes") as string,
+            additional_notes: additionalNotes,
         }
 
         try {
@@ -299,6 +309,21 @@ const CreateReport = () => {
                                                 </ol>
                                             </div>
                                         </div>
+                                         {/* Paramedic Recommendations */}
+                                         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+                                            <h5 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+                                                <Stethoscope className="h-4 w-4 text-purple-500" />
+                                                Recomendaciones para Paramédicos
+                                            </h5>
+                                            <ul className="space-y-2">
+                                                {aiAnalysis.paramedic_recommendations.map((rec, idx) => (
+                                                    <li key={idx} className="text-sm text-gray-600 dark:text-gray-300 flex items-start gap-2">
+                                                        <span className="text-purple-400 mt-0.5">•</span>
+                                                        {rec}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
                                 )}
 
@@ -307,7 +332,15 @@ const CreateReport = () => {
                             </div>
                             <div className="sm:col-span-2">
                                 <label htmlFor="notes" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Notas adicionales</label>
-                                <textarea name="notes" id="notes" rows={8} className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresa los detalles adicionales que pueden ser útiles"></textarea>
+                                <textarea 
+                                    name="notes" 
+                                    id="notes" 
+                                    rows={8} 
+                                    className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" 
+                                    placeholder="Ingresa los detalles adicionales que pueden ser útiles"
+                                    value={additionalNotes}
+                                    onChange={(e) => setAdditionalNotes(e.target.value)}
+                                ></textarea>
                             </div>
                         </div>
                         <div className="w-full mt-8">
