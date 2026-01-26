@@ -132,7 +132,7 @@ const BaseLayout = ({ children }: { children: ReactNode }) => {
                 </div>
             </aside>
 
-            <main className='p-4 sm:ml-64 pt-20 min-h-screen'>
+            <main className='p-4 sm:ml-64 pt-20 mt-16 min-h-screen'>
                 {children}
             </main>
 

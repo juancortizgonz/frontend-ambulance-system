@@ -21,7 +21,6 @@ import { useToast } from "@/components/ui/ToastProvider"
 
 const columnHelper = createColumnHelper<AccidentReport>()
 
-// ToDo: Change this to use the existing Modal component from the project
 function Modal({
   isOpen,
   onClose,
