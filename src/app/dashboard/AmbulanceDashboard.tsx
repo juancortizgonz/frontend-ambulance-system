@@ -13,6 +13,7 @@ import {
 } from "@react-google-maps/api";
 import { useAuth } from "@/hooks/useAuth";
 import Footer from "@/components/Footer";
+import { data } from "react-router";
 
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -23,10 +24,12 @@ type GoogleMapsRef = google.maps.Map | null;
 const containerStyle = { width: "100%", height: "80vh" };
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 
+/*
 const hospitals = [
   { lat: 3.43018335, lng: -76.5454400504182 },
   { lat: 3.2571925, lng: -76.5443504949529 },
 ];
+*/
 
 const AmbulanceDashboard: React.FC = () => {
   const [status, setStatus] = useState(null);
@@ -44,6 +47,12 @@ const AmbulanceDashboard: React.FC = () => {
   const [estimatedTime, setEstimatedTime] = useState<string>("");
   const [closestHospital, setClosestHospital] = useState<LatLngLiteral | null>(null); // Estado para almacenar el hospital más cercano
   const [hasShownModal, setHasShownModal] = useState(false); // Nueva bandera para controlar la visualización del modal
+  
+  // Configuración modal
+  const [showConfigurationModal, setConfigurationShowModal] = useState(false); // Estado para mostrar/ocultar el modal de configuración
+
+  // Hospitales
+  const [hospitals, setHospital] = useState<LatLngLiteral | null>(null);
 
   const originIcon = window.google?.maps
   ? {
@@ -96,7 +105,7 @@ const hospitalIcon = window.google?.maps
     }
   }, []);
 
-  //Useeffect para enviar la posicion de la ambulancia a la base de datos con una direccion humana.
+  //Use effect para enviar la posicion de la ambulancia a la base de datos con una direccion humana.
   useEffect(() => {
     const interval = setInterval(() => {
       updateAmbulanceLocation();
@@ -198,7 +207,33 @@ const hospitalIcon = window.google?.maps
     }
   }, [user_id, token]);
 
+  // Obtener hospitales desde la API
+  const getHospitals = async () => {
+    const response = await fetch(
+      `http://localhost:8000/api/v1/hospitals/`,
+      {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      });
+    if (!response.ok) throw new Error("Error al obtener hospitales");
 
+    const dataHospitals = await response.json();
+    console.log("Hospitals response:", dataHospitals);
+
+    const formattedHospitals = dataHospitals.map((hospital) => ({
+      lat: parseFloat(hospital.latitude),
+      lng: parseFloat(hospital.longitude),
+    }));
+
+    setHospital(formattedHospitals);
+    console.log("Formatted Hospitals:", formattedHospitals);
+    return dataHospitals;
+  }
+
+  useEffect(() => {
+    getHospitals()
+  }, []);
 
   const findClosestHospital = async () => {
     if (!origin) return;
@@ -680,7 +715,23 @@ const handleRefresh = async () => {
       </Button>
     </Modal.Footer>
   </Modal>
+
 )}
+
+  <Modal show={showConfigurationModal} onHide={() => setConfigurationShowModal(false)} centered>
+    <Modal.Header closeButton>
+      <Modal.Title>Configuración</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+      <p>Configuracion</p>
+    </Modal.Body>
+    <Modal.Footer>
+      <Button variant="danger" onClick={() => setConfigurationShowModal(false)}>
+        Cerrar
+      </Button>
+    </Modal.Footer>
+  </Modal>
+
 
     <LoadScript googleMapsApiKey={googleMapsApiKey || ""} libraries={libraries}>
     <div className="flex flex-col items-center">
@@ -741,6 +792,13 @@ const handleRefresh = async () => {
             >
               Actualizar mapa
             </button>
+            <button
+              className={`bg-gray-500 text-white p-3 ml-2 rounded-lg`}
+              onClick={() => {
+                setConfigurationShowModal(true)}}
+            >
+              Configuracion
+            </button>
           </div>
           {estimatedTime && <p>Tiempo estimado de llegada: {estimatedTime}</p>}
           <GoogleMap
@@ -758,6 +816,9 @@ const handleRefresh = async () => {
             {console.log("este es el destino", destination)}
             {destination && <Marker position={destination} icon={destinationIcon} />}
             {closestHospital && <Marker position={closestHospital} icon={hospitalIcon} />}
+            {hospitals && hospitals.map((hospital, index) => (
+              <Marker key={index} position={hospital} icon={hospitalIcon} />
+            ))}
 
             {route && route.polyline && route.polyline.encodedPolyline && (
               <>
