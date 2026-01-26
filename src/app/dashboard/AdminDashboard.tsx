@@ -273,6 +273,7 @@ const AdminDashboard: React.FC = () => {
     if (!accidentReportsFetched) return [];
     return accidentReportsFetched
       .filter(report => report.assigned_ambulance === null)
+      .filter(report => !report.is_resolved)
       .sort((a, b) => {
         if (a.severity === 'UCI' && b.severity !== 'UCI') return -1;
         if (a.severity !== 'UCI' && b.severity === 'UCI') return 1;
