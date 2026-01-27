@@ -1,6 +1,6 @@
 import BaseLayout from "@/layouts/BaseLayout"
 import api from "@/api/api"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import mbxGeocoding from "@mapbox/mapbox-sdk/services/geocoding";
 import { useToast } from "@/components/ui/ToastProvider";
 import { AlertTriangle, Info, ShieldAlert, Phone, Stethoscope, Car, Building, Landmark, Mountain, ShieldCheck, Siren } from "lucide-react";
@@ -25,6 +25,104 @@ const CreateReport = () => {
     const [additionalNotes, setAdditionalNotes] = useState<string>("");
     const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
     const [loadingAI, setLoadingAI] = useState(false);
+
+    interface AmbulanceData {
+        id: number;
+        plate_number: string;
+        ambulance_type: "BASIC" | "UCI";
+        status: "available" | "in_use" | "out_of_service";
+        capacity: number;
+        last_inspection_date: string;
+        latitude: number;
+        longitude: number;
+    }
+
+    const [ambulances, setAmbulances] = useState<AmbulanceData[]>([]);
+
+    useEffect(() => {
+        const fetchAmbulances = async () => {
+            try {
+                const response = await api.get("/ambulances/");
+                const availableAmbulances = response.data.filter(
+                    (amb: AmbulanceData) => amb.status === 'available'
+                );
+                setAmbulances(availableAmbulances);
+            } catch (error) {
+                console.error("Error fetching ambulances:", error);
+                pushToast({
+                    title: "Error de Red",
+                    message: "No se pudieron cargar los datos de las ambulancias.",
+                    type: "error",
+                });
+            }
+        };
+        fetchAmbulances();
+    }, []);
+
+    const { maxCapacity, totalBasicCapacity, totalUciCapacity } = useMemo(() => {
+        return ambulances.reduce(
+            (acc, amb) => {
+                acc.maxCapacity = Math.max(acc.maxCapacity, amb.capacity);
+                if (amb.ambulance_type === 'BASIC') {
+                    acc.totalBasicCapacity += amb.capacity;
+                } else if (amb.ambulance_type === 'UCI') {
+                    acc.totalUciCapacity += amb.capacity;
+                }
+                return acc;
+            },
+            { maxCapacity: 0, totalBasicCapacity: 0, totalUciCapacity: 0 }
+        );
+    }, [ambulances]);
+
+    const handleValidateAvailability = () => {
+        const peopleInvolvedInput = document.getElementById("peopleinvolved") as HTMLInputElement;
+        const peopleInvolved = parseInt(peopleInvolvedInput.value, 10);
+
+        if (isNaN(peopleInvolved) || peopleInvolved <= 0) {
+            pushToast({
+                title: "Dato Inválido",
+                message: "Por favor, ingresa un número válido de personas involucradas.",
+                type: "warning",
+            });
+            return;
+        }
+
+        if (!severity) {
+            pushToast({
+                title: "Selección Requerida",
+                message: "Por favor, selecciona primero la gravedad del incidente.",
+                type: "warning",
+            });
+            return;
+        }
+
+        if (peopleInvolved > maxCapacity) {
+            pushToast({
+                title: "Alerta de Capacidad Individual",
+                message: `El número de afectados (${peopleInvolved}) supera la capacidad de la ambulancia más grande disponible (${maxCapacity}). Considere dividir el reporte.`,
+                type: "warning",
+                duration: 8000,
+            });
+            return; 
+        }
+
+        const relevantTotalCapacity = severity === 'UCI' ? totalUciCapacity : totalBasicCapacity;
+        if (peopleInvolved > relevantTotalCapacity) {
+            pushToast({
+                title: "Alerta de Capacidad Total",
+                message: `El número de afectados (${peopleInvolved}) supera la capacidad total para emergencias de tipo ${severity} (${relevantTotalCapacity}).`,
+                type: "error",
+                duration: 8000,
+            });
+        } else {
+            pushToast({
+                title: "Disponibilidad Confirmada",
+                message: `Capacidad suficiente para atender a ${peopleInvolved} personas con una emergencia de tipo ${severity}.`,
+                type: "success",
+            });
+        }
+    };
+
 
     useEffect(() => {
         if (aiAnalysis?.paramedic_recommendations) {
@@ -269,7 +367,12 @@ const CreateReport = () => {
                             </div>
                             <div>
                                 <label htmlFor="peopleinvolved" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cantidad de personas involucradas</label>
-                                <input type="number" min={1} name="peopleinvolved" id="peopleinvolved" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresa una cantidad de personas involucradas" />
+                                <div className="flex items-center gap-2">
+                                    <input type="number" min={1} name="peopleinvolved" id="peopleinvolved" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresa una cantidad" />
+                                    <button type="button" onClick={handleValidateAvailability} className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold whitespace-nowrap">
+                                        Validar Disp.
+                                    </button>
+                                </div>
                             </div>
                             <div className="sm:col-span-2">
                                 <label htmlFor="description" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Descripción del incidente</label>
