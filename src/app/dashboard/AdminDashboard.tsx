@@ -672,7 +672,7 @@ const AdminDashboard: React.FC = () => {
               </NavLink>
             </div>
           </div>
-          <AccidentReportsTable data={accidentReportsFetched} />
+          <AccidentReportsTable data={accidentReportsFetched} onDataChange={fetchAccidentReports} />
         </div>
 
         {isModalOpen && (
@@ -745,7 +745,6 @@ const AdminDashboard: React.FC = () => {
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
                 <option value="BASIC">Básica</option>
-                <option value="MEDIUM">Media</option>
                 <option value="UCI">UCI</option>
               </select>
             </div>

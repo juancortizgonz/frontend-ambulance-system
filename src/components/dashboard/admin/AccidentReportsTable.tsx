@@ -43,13 +43,13 @@ function Modal({
             <X size={20} />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-6 max-h-[80vh] overflow-y-auto">{children}</div>
       </div>
     </div>
   )
 }
 
-export default function AccidentReportsTable({ data }: { data: AccidentReport[] }) {
+export default function AccidentReportsTable({ data, onDataChange }: { data: AccidentReport[], onDataChange: () => void; }) {
   const { pushToast } = useToast();
 
   const [sorting, setSorting] = useState<SortingState>([])
@@ -265,14 +265,34 @@ export default function AccidentReportsTable({ data }: { data: AccidentReport[] 
   const handleSaveEdit = async () => {
     if (!editForm) return
 
-    const response = await api.put(`/accident-reports/${editForm.id}/`, editForm);
+    try {
+      const response = await api.put(`/accident-reports/${editForm.id}/`, editForm)
+      if (response.status !== 200) {
+        pushToast({
+          title: "Error",
+          message: "Error al guardar el reporte.",
+          type: "error",
+          duration: 5000,
+        })
+        return
+      }
 
-    if (response.status !== 200) {
-      console.error("Error al guardar el reporte:", response.data)
-      return
+      pushToast({
+        title: "Éxito",
+        message: "Reporte actualizado con éxito.",
+        type: "success",
+        duration: 5000,
+      })
+      setIsEditModalOpen(false)
+      onDataChange()
+    } catch (error) {
+      pushToast({
+        title: "Error",
+        message: "Ocurrió un error al guardar el reporte.",
+        type: "error",
+        duration: 5000,
+      })
     }
-
-    setIsEditModalOpen(false)
   }
 
   const handleConfirmDelete = async () => {
@@ -421,8 +441,8 @@ export default function AccidentReportsTable({ data }: { data: AccidentReport[] 
               <label className="block text-sm font-medium text-gray-700">Tiempo del accidente</label>
               <input
                 type="datetime-local"
-                value={editForm.accident_time.replace(" ", "T")}
-                onChange={(e) => handleEditFormChange("accident_time", e.target.value.replace("T", " "))}
+                value={new Date(editForm.accident_time).toISOString().slice(0, 16)}
+                onChange={(e) => handleEditFormChange("accident_time", e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
@@ -470,10 +490,8 @@ export default function AccidentReportsTable({ data }: { data: AccidentReport[] 
                 onChange={(e) => handleEditFormChange("severity", e.target.value as any)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
-                <option value="Baja">Baja</option>
-                <option value="Media">Media</option>
-                <option value="Alta">Alta</option>
-                <option value="Crítica">Crítica</option>
+                <option value="BASIC">Básica</option>
+                <option value="UCI">UCI</option>
               </select>
             </div>
 
@@ -500,9 +518,9 @@ export default function AccidentReportsTable({ data }: { data: AccidentReport[] 
             <div>
               <label className="block text-sm font-medium text-gray-700">Personas involucradas</label>
               <input
-                type="text"
+                type="number"
                 value={editForm.people_involved}
-                onChange={(e) => handleEditFormChange("people_involved", e.target.value)}
+                onChange={(e) => handleEditFormChange("people_involved", parseInt(e.target.value, 10))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
