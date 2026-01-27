@@ -25,6 +25,7 @@ const CreateReport = () => {
     const [additionalNotes, setAdditionalNotes] = useState<string>("");
     const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
     const [loadingAI, setLoadingAI] = useState(false);
+    const [splitRecommendation, setSplitRecommendation] = useState<number>(0);
 
     interface AmbulanceData {
         id: number;
@@ -97,13 +98,15 @@ const CreateReport = () => {
         }
 
         if (peopleInvolved > maxCapacity) {
+            const numReports = Math.ceil(peopleInvolved / maxCapacity);
+            setSplitRecommendation(numReports);
             pushToast({
-                title: "Alerta de Capacidad Individual",
-                message: `El número de afectados (${peopleInvolved}) supera la capacidad de la ambulancia más grande disponible (${maxCapacity}). Considere dividir el reporte.`,
+                title: "Alerta de Capacidad",
+                message: `Se recomienda dividir el reporte en ${numReports} partes.`,
                 type: "warning",
                 duration: 8000,
             });
-            return; 
+            return;
         }
 
         const relevantTotalCapacity = severity === 'UCI' ? totalUciCapacity : totalBasicCapacity;
@@ -115,10 +118,70 @@ const CreateReport = () => {
                 duration: 8000,
             });
         } else {
+            setSplitRecommendation(0);
             pushToast({
                 title: "Disponibilidad Confirmada",
-                message: `Capacidad suficiente para atender a ${peopleInvolved} personas con una emergencia de tipo ${severity}.`,
+                message: `Capacidad suficiente para atender a ${peopleInvolved} personas.`,
                 type: "success",
+            });
+        }
+    };
+
+    const handleSplitReport = async () => {
+        if (splitRecommendation <= 1) return;
+
+        const formElement = document.querySelector("form") as HTMLFormElement;
+        if (!formElement) return;
+        
+        const formData = new FormData(formElement);
+        const originalPeopleInvolved = parseInt(formData.get("peopleinvolved") as string, 10);
+        
+        let remainingPeople = originalPeopleInvolved;
+        const reportsArray = [];
+
+        for (let i = 1; i <= splitRecommendation; i++) {
+            const peopleForThisReport = Math.min(remainingPeople, maxCapacity);
+            remainingPeople -= peopleForThisReport;
+
+            const reportData = {
+                address: formData.get("direction") as string,
+                latitude: latitude,
+                longitude: longitude,
+                caller_phone_number: formData.get("callernumber") as string,
+                is_active: isActive,
+                is_resolved: isResolved,
+                reference_point: formData.get("referencepoint") as string,
+                type_place: typePlace,
+                severity: severity,
+                people_involved: peopleForThisReport,
+                description: `(Reporte ${i} de ${splitRecommendation}) ${formData.get("description") as string}`,
+                additional_notes: additionalNotes,
+            };
+            reportsArray.push(reportData);
+        }
+
+        try {
+            const response = await api.post("/accident-reports-bulk/", JSON.stringify(reportsArray));
+
+            if (response.status === 201) {
+                pushToast({
+                    title: "Reportes Divididos Creados",
+                    message: `${splitRecommendation} reportes han sido creados exitosamente.`,
+                    type: "success",
+                    duration: 5000,
+                });
+                resetFields();
+                setSplitRecommendation(0);
+            } else {
+                throw new Error(`Error creating bulk reports: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error al crear reportes divididos:", error);
+            pushToast({
+                title: "Error al Dividir Reporte",
+                message: "Ocurrió un error al crear los reportes divididos.",
+                type: "error",
+                duration: 5000,
             });
         }
     };
@@ -368,7 +431,7 @@ const CreateReport = () => {
                             <div>
                                 <label htmlFor="peopleinvolved" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cantidad de personas involucradas</label>
                                 <div className="flex items-center gap-2">
-                                    <input type="number" min={1} name="peopleinvolved" id="peopleinvolved" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresa una cantidad" />
+                                    <input type="number" min={1} name="peopleinvolved" id="peopleinvolved" onChange={() => setSplitRecommendation(0)} className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Ingresa una cantidad" />
                                     <button type="button" onClick={handleValidateAvailability} className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold whitespace-nowrap">
                                         Validar Disp.
                                     </button>
@@ -508,9 +571,20 @@ const CreateReport = () => {
                                 />
 
                             </div>
-                        <button type="submit" className="inline-flex items-center px-5 py-2.5 mt-4 sm:mt-6 text-sm font-medium text-center text-white bg-primary-700 rounded-lg focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 hover:bg-primary-800 bg-red-700">
-                            Agregar incidente
-                        </button>
+                        <div className="flex items-center gap-4 mt-4 sm:mt-6">
+                            <button type="submit" className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-primary-700 rounded-lg focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 hover:bg-primary-800 bg-red-700">
+                                Agregar incidente
+                            </button>
+                            {splitRecommendation > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={handleSplitReport}
+                                    className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:ring-green-300"
+                                >
+                                    Generar {splitRecommendation} Reportes Divididos
+                                </button>
+                            )}
+                        </div>
                     </form>
                 </div>
             </section>
