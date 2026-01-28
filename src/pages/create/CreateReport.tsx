@@ -26,6 +26,7 @@ const CreateReport = () => {
     const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
     const [loadingAI, setLoadingAI] = useState(false);
     const [splitRecommendation, setSplitRecommendation] = useState<number>(0);
+    const [etaMethod, setEtaMethod] = useState<"google" | "distancematrix_ai">("distancematrix_ai");
 
     interface AmbulanceData {
         id: number;
@@ -156,6 +157,7 @@ const CreateReport = () => {
                 people_involved: peopleForThisReport,
                 description: `(Reporte ${i} de ${splitRecommendation}) ${formData.get("description") as string}`,
                 additional_notes: additionalNotes,
+                eta_method: etaMethod,
             };
             reportsArray.push(reportData);
         }
@@ -236,6 +238,7 @@ const CreateReport = () => {
             people_involved: parseInt(formData.get("peopleinvolved") as string, 10),
             description: formData.get("description") as string,
             additional_notes: additionalNotes,
+            eta_method: etaMethod,
         }
 
         try {
@@ -426,6 +429,44 @@ const CreateReport = () => {
                                             {option.label}
                                         </button>
                                     ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label htmlFor="etaMethod" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                                    Método de Cálculo ETA
+                                    <div className="relative group ml-2">
+                                        <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
+                                        <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+8px)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none z-10 whitespace-nowrap">
+                                            "Google" es más preciso pero puede ser más lento. "DistanceMatrix AI" es más rápido.
+                                        </div>
+                                        <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+4px)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-3 h-3 bg-gray-800 rotate-45 pointer-events-none z-10"></div>
+                                    </div>
+                                </label>
+                                <div className="flex gap-4">
+                                    <div className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            id="etaGoogle"
+                                            name="etaMethod"
+                                            value="google"
+                                            checked={etaMethod === "google"}
+                                            onChange={() => setEtaMethod("google")}
+                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                        />
+                                        <label htmlFor="etaGoogle" className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">Google</label>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            id="etaDistanceMatrixAI"
+                                            name="etaMethod"
+                                            value="distancematrix_ai"
+                                            checked={etaMethod === "distancematrix_ai"}
+                                            onChange={() => setEtaMethod("distancematrix_ai")}
+                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                        />
+                                        <label htmlFor="etaDistanceMatrixAI" className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">DistanceMatrix AI</label>
+                                    </div>
                                 </div>
                             </div>
                             <div>
