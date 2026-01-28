@@ -61,18 +61,19 @@ const CreateReport = () => {
         fetchAmbulances();
     }, []);
 
-    const { maxCapacity, totalBasicCapacity, totalUciCapacity } = useMemo(() => {
+    const { maxBasicCapacity, maxUciCapacity, totalBasicCapacity, totalUciCapacity } = useMemo(() => {
         return ambulances.reduce(
             (acc, amb) => {
-                acc.maxCapacity = Math.max(acc.maxCapacity, amb.capacity);
                 if (amb.ambulance_type === 'BASIC') {
                     acc.totalBasicCapacity += amb.capacity;
+                    acc.maxBasicCapacity = Math.max(acc.maxBasicCapacity, amb.capacity);
                 } else if (amb.ambulance_type === 'UCI') {
                     acc.totalUciCapacity += amb.capacity;
+                    acc.maxUciCapacity = Math.max(acc.maxUciCapacity, amb.capacity);
                 }
                 return acc;
             },
-            { maxCapacity: 0, totalBasicCapacity: 0, totalUciCapacity: 0 }
+            { maxBasicCapacity: 0, maxUciCapacity: 0, totalBasicCapacity: 0, totalUciCapacity: 0 }
         );
     }, [ambulances]);
 
@@ -98,34 +99,49 @@ const CreateReport = () => {
             return;
         }
 
-        if (peopleInvolved > maxCapacity) {
-            const numReports = Math.ceil(peopleInvolved / maxCapacity);
-            setSplitRecommendation(numReports);
+        const relevantMaxCapacity = severity === 'UCI' ? maxUciCapacity : maxBasicCapacity;
+        const relevantTotalCapacity = severity === 'UCI' ? totalUciCapacity : totalBasicCapacity;
+
+        if (relevantTotalCapacity === 0) {
             pushToast({
-                title: "Alerta de Capacidad",
-                message: `Se recomienda dividir el reporte en ${numReports} partes.`,
-                type: "warning",
-                duration: 8000,
+                title: "Sin Disponibilidad",
+                message: `No hay ambulancias de tipo ${severity} disponibles.`,
+                type: "error",
             });
+            setSplitRecommendation(0);
             return;
         }
 
-        const relevantTotalCapacity = severity === 'UCI' ? totalUciCapacity : totalBasicCapacity;
         if (peopleInvolved > relevantTotalCapacity) {
             pushToast({
-                title: "Alerta de Capacidad Total",
-                message: `El número de afectados (${peopleInvolved}) supera la capacidad total para emergencias de tipo ${severity} (${relevantTotalCapacity}).`,
+                title: "Capacidad Total Insuficiente",
+                message: `El número de afectados (${peopleInvolved}) supera la capacidad total disponible para el tipo ${severity} (${relevantTotalCapacity}). No es posible atender a todos los involucrados.`,
                 type: "error",
                 duration: 8000,
             });
-        } else {
-            setSplitRecommendation(0);
-            pushToast({
-                title: "Disponibilidad Confirmada",
-                message: `Capacidad suficiente para atender a ${peopleInvolved} personas.`,
-                type: "success",
-            });
+            setSplitRecommendation(0); // No split recommendation if total capacity is insufficient
+            return;
         }
+
+        if (peopleInvolved > relevantMaxCapacity) {
+            const numReports = Math.ceil(peopleInvolved / relevantMaxCapacity);
+            setSplitRecommendation(numReports);
+            pushToast({
+                title: "Alerta de Capacidad",
+                message: `Se requiere más de una ambulancia. Se recomienda dividir el reporte en ${numReports} partes.`,
+                type: "warning",
+                duration: 8000,
+            });
+            return; // Return here, as we have a recommendation
+        }
+
+        // If we reach here, it means people_involved <= relevantMaxCapacity, so one ambulance is enough.
+        setSplitRecommendation(0);
+        pushToast({
+            title: "Disponibilidad Confirmada",
+            message: `Capacidad suficiente para atender a ${peopleInvolved} personas.`,
+            type: "success",
+        });
     };
 
     const handleSplitReport = async () => {
@@ -137,11 +153,17 @@ const CreateReport = () => {
         const formData = new FormData(formElement);
         const originalPeopleInvolved = parseInt(formData.get("peopleinvolved") as string, 10);
         
+        const relevantMaxCapacity = severity === 'UCI' ? maxUciCapacity : maxBasicCapacity;
+        if (relevantMaxCapacity === 0) {
+            pushToast({ title: "Error", message: "No se puede dividir el reporte, no hay capacidad de ambulancia.", type: "error" });
+            return;
+        }
+
         let remainingPeople = originalPeopleInvolved;
         const reportsArray = [];
 
         for (let i = 1; i <= splitRecommendation; i++) {
-            const peopleForThisReport = Math.min(remainingPeople, maxCapacity);
+            const peopleForThisReport = Math.min(remainingPeople, relevantMaxCapacity);
             remainingPeople -= peopleForThisReport;
 
             const reportData = {
