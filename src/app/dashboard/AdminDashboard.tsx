@@ -260,6 +260,7 @@ const AdminDashboard: React.FC = () => {
   const [editForm, setEditForm] = useState<AccidentReport | null>(null)
   const [ambulances, setAmbulances] = useState<any[]>([]);
   const [selectedAmbulance, setSelectedAmbulance] = useState<string>("")
+  const [etaMethod, setEtaMethod] = useState<"google" | "distancematrix_ai">("distancematrix_ai");
 
   const stats = useMemo(() => {
     const totalReports = accidentReportsFetched.length;
@@ -455,9 +456,13 @@ const AdminDashboard: React.FC = () => {
     setIsDeleteModalOpen(true)
   }
 
-  const fetchRecommendedAmbulances = async (id: number) => {
+  const fetchRecommendedAmbulances = async (id: number, method: "google" | "distancematrix_ai") => {
     try {
-      const ambulancesRes = await api.get(`/ambulances/accident-reports/${id}/`);
+      const ambulancesRes = await api.get(`/ambulances/accident-reports/${id}/`, {
+        params: {
+          eta_method: method
+        }
+      });
 
       if (ambulancesRes.status !== 200) {
         toast.error("Error al obtener ambulancias recomendadas");
@@ -481,9 +486,15 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
+  useEffect(() => {
+    if (isAmbulanceModalOpen && selectedReport) {
+      fetchRecommendedAmbulances(selectedReport.id, etaMethod);
+    }
+  }, [isAmbulanceModalOpen, selectedReport, etaMethod]);
+
   const handleAssignAmbulance = (report: AccidentReport) => {
     setSelectedReport(report)
-    fetchRecommendedAmbulances(report.id);
+    setEtaMethod("distancematrix_ai"); // Reset to default when opening
     setIsAmbulanceModalOpen(true)
   }
 
@@ -811,6 +822,22 @@ const AdminDashboard: React.FC = () => {
               <h4 className="font-medium text-gray-900">Detalles del accidente:</h4>
               <p><span className="font-medium">Dirección:</span> {selectedReport.address}</p>
               <p><span className="font-medium">Severidad:</span> {selectedReport.severity}</p>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="etaMethod" className="block text-sm font-medium text-gray-700">
+                Método de Cálculo ETA
+              </label>
+              <select
+                id="etaMethod"
+                name="etaMethod"
+                value={etaMethod}
+                onChange={(e) => setEtaMethod(e.target.value as "google" | "distancematrix_ai")}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              >
+                <option value="distancematrix_ai">DistanceMatrix AI (Rápido)</option>
+                <option value="google">Google (Preciso)</option>
+              </select>
             </div>
 
             <h4 className="font-medium text-gray-900 mb-2">Ambulancias disponibles:</h4>

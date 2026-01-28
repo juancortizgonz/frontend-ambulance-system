@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   createColumnHelper,
   flexRender,
@@ -64,6 +64,7 @@ export default function AccidentReportsTable({ data, onDataChange }: { data: Acc
   const [ambulances, setAmbulances] = useState<any[]>([]);
   const [estimatedTime, setEstimatedTime] = useState<number[]>([]);
   const [selectedAmbulance, setSelectedAmbulance] = useState<string>("")
+  const [etaMethod, setEtaMethod] = useState<"google" | "distancematrix_ai">("distancematrix_ai");
 
   const columns = [
     columnHelper.accessor("accident_time", {
@@ -228,8 +229,12 @@ export default function AccidentReportsTable({ data, onDataChange }: { data: Acc
     }
   }
 
-  const fetchRecommendedAmbulances = async (id: number) => {
-    const ambulances = await api.get(`/ambulances/accident-reports/${id}/`);
+  const fetchRecommendedAmbulances = async (id: number, method: "google" | "distancematrix_ai") => {
+    const ambulances = await api.get(`/ambulances/accident-reports/${id}/`, {
+      params: {
+        eta_method: method
+      }
+    });
 
     if (ambulances.status !== 200) {
       console.error("Error al obtener ambulancias recomendadas:", ambulances.data)
@@ -249,16 +254,21 @@ export default function AccidentReportsTable({ data, onDataChange }: { data: Acc
       setEstimatedTime([]);
       return;
     } else {
-      setSelectedAmbulance(recommendedAmbulances[0].id);
+      setSelectedAmbulance(recommendedAmbulances[0].ambulance.plate_number);
     }
 
     setEstimatedTime((ambulances.data as { estimated_time: number }[]).map((amb: { estimated_time: number }) => amb.estimated_time));
   }
 
+  useEffect(() => {
+    if (isAmbulanceModalOpen && selectedReport) {
+      fetchRecommendedAmbulances(selectedReport.id, etaMethod);
+    }
+  }, [isAmbulanceModalOpen, selectedReport, etaMethod]);
+
   const handleAssignAmbulance = (report: AccidentReport) => {
     setSelectedReport(report)
-    fetchRecommendedAmbulances(report.id);
-    setSelectedAmbulance(ambulances.find((amb) => amb.is_recommended)?.plate_number || "")
+    setEtaMethod("distancematrix_ai"); // Reset to default when opening
     setIsAmbulanceModalOpen(true)
   }
 
@@ -606,6 +616,22 @@ export default function AccidentReportsTable({ data, onDataChange }: { data: Acc
                   </span>
                 )}
               </p>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="etaMethod" className="block text-sm font-medium text-gray-700">
+                Método de Cálculo ETA
+              </label>
+              <select
+                id="etaMethod"
+                name="etaMethod"
+                value={etaMethod}
+                onChange={(e) => setEtaMethod(e.target.value as "google" | "distancematrix_ai")}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              >
+                <option value="distancematrix_ai">DistanceMatrix AI (Rápido)</option>
+                <option value="google">Google (Preciso)</option>
+              </select>
             </div>
 
             <h4 className="font-medium text-gray-900 mb-2">Ambulancias disponibles:</h4>
